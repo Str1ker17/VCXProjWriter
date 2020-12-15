@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)\Solution.props" />
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4fc6625a-040e-458e-802d-376877f8b5ed}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
+    <NMakeIncludeSearchPath>$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <NMakeForcedIncludes>$(NMakeForcedIncludes)</NMakeForcedIncludes>
+    <NMakePreprocessorDefinitions>$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <AdditionalOptions>$(AdditionalOptions)</AdditionalOptions>
+  </PropertyGroup>
+  <ItemGroup Label="Source Files">
+    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Source1.cpp" />
+    <ClCompile Include="Source2.cpp" />
+    <ClCompile Include="Source3.cpp" />
+    <ClCompile Include="Source4.cpp" />
+    <ClCompile Include="Source5.cpp" />
+    <ClCompile Include="Source6.cpp" />
+  </ItemGroup>
+  <ItemGroup Label="Header Files">
+    <ClInclude Include="Header.h" />
+    <ClInclude Include="Header1.h" />
+    <ClInclude Include="Header2.h" />
+    <ClInclude Include="Header3.h" />
+    <ClInclude Include="Header4.h" />
+    <ClInclude Include="Header5.h" />
+    <ClInclude Include="inc\mymom\Header6.h" />
+  </ItemGroup>
+</Project>

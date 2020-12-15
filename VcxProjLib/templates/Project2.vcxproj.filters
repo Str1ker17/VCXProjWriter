@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="subproj">
+      <UniqueIdentifier>{c62a948f-fcfb-4808-9ddc-1b3736438bb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="subproj2">
+      <UniqueIdentifier>{6dadd378-49d3-485b-b742-02808077bae0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="subproj\subsubproj">
+      <UniqueIdentifier>{1db75b71-ee39-48d7-8524-38903d9e5cb0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Header2.h">
+      <Filter>subproj</Filter>
+    </ClInclude>
+    <ClInclude Include="Header3.h">
+      <Filter>subproj2</Filter>
+    </ClInclude>
+    <ClInclude Include="Header4.h">
+      <Filter>subproj2</Filter>
+    </ClInclude>
+    <ClInclude Include="Header.h" />
+    <ClInclude Include="Header1.h" />
+    <ClInclude Include="inc\mymom\Header6.h">
+      <Filter>subproj\subsubproj</Filter>
+    </ClInclude>
+    <ClInclude Include="Header5.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source3.cpp">
+      <Filter>subproj</Filter>
+    </ClCompile>
+    <ClCompile Include="Source4.cpp">
+      <Filter>subproj</Filter>
+    </ClCompile>
+    <ClCompile Include="Source5.cpp">
+      <Filter>subproj2</Filter>
+    </ClCompile>
+    <ClCompile Include="Source6.cpp">
+      <Filter>subproj2</Filter>
+    </ClCompile>
+    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Source1.cpp" />
+    <ClCompile Include="Source2.cpp" />
+  </ItemGroup>
+</Project>
