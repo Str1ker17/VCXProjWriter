@@ -1,9 +1,9 @@
 ﻿namespace VcxProjLib {
     public enum IncludeDirectoryType {
-        Null,
-        Generic,
-        Quote,
-        System,
-        DirAfter
+        Null
+      , Generic
+      , Quote
+      , System
+      , DirAfter
     }
 }

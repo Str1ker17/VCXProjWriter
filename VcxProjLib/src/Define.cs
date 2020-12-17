@@ -25,6 +25,10 @@ namespace VcxProjLib {
         public String Value { get; set; }
 
         public override String ToString() {
+            if (Value == DefaultValue) {
+                return Name;
+            }
+
             return Name + "=" + Value;
         }
     }

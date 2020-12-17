@@ -1,23 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Build.Logging;
 
 namespace VcxProjLib {
     public class ProjectFile {
-        protected class DefineNameComparer : IEqualityComparer<Define> {
-            public bool Equals(Define x, Define y) {
-                if (ReferenceEquals(x, y)) return true;
-                if (ReferenceEquals(x, null)) return false;
-                if (ReferenceEquals(y, null)) return false;
-                if (x.GetType() != y.GetType()) return false;
-                return x.Name == y.Name;
-            }
-
-            public int GetHashCode(Define obj) {
-                return obj.Name.GetHashCode();
-            }
-        }
-
-        protected DefineNameComparer DefineNameComparerInstance;
+        protected static DefineNameComparer DefineNameComparerInstance = new DefineNameComparer();
 
         public String FilePath { get; private set; }
         public HashSet<String> IncludeDirectories { get; private set; }
@@ -25,7 +12,6 @@ namespace VcxProjLib {
 
         public ProjectFile(String filePath) {
             IncludeDirectories = new HashSet<String>();
-            DefineNameComparerInstance = new DefineNameComparer();
             Defines = new HashSet<Define>(DefineNameComparerInstance);
             FilePath = filePath;
         }
@@ -35,7 +21,13 @@ namespace VcxProjLib {
         }
 
         public bool Define(String defineString) {
-            return Defines.Add(new Define(defineString));
+            Define newDefine = new Define(defineString);
+            if (Defines.Contains(newDefine)) {
+                Console.WriteLine("[!] warning: '{0}' redefined to '{1}'", newDefine.Name, newDefine.Value);
+                Defines.Remove(newDefine);
+            }
+
+            return Defines.Add(newDefine);
         }
 
         public bool Undefine(String undefineString) {
@@ -61,7 +53,6 @@ namespace VcxProjLib {
         /// </summary>
         /// <returns></returns>
         public Int64 HashProjectID() {
-            
             var hashIn = String.Empty.GetHashCode();
             foreach (var inc in IncludeDirectories) {
                 hashIn += inc.GetHashCode();
@@ -72,6 +63,20 @@ namespace VcxProjLib {
             }
 
             return hashIn;
+        }
+
+        protected class DefineNameComparer : IEqualityComparer<Define> {
+            public bool Equals(Define x, Define y) {
+                if (ReferenceEquals(x, y)) return true;
+                if (ReferenceEquals(x, null)) return false;
+                if (ReferenceEquals(y, null)) return false;
+                if (x.GetType() != y.GetType()) return false;
+                return x.Name == y.Name;
+            }
+
+            public int GetHashCode(Define obj) {
+                return obj.Name.GetHashCode();
+            }
         }
     }
 }

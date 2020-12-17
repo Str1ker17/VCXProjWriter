@@ -1,4 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+
 <!-- This file contains a template (default settings) for projects generated with VCXProjWriter. -->
 <!-- https://github.com/Str1ker17/VCXProjWriter -->
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -30,13 +31,13 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Makefile</ConfigurationType>
-	<RemoteRootDir>/tmp/VCXProjWriter</RemoteRootDir>
+    <RemoteRootDir>/tmp/VCXProjWriter</RemoteRootDir>
   </PropertyGroup>
   <PropertyGroup>
-	<NMakeIncludeSearchPath>$(ProjectDir)\include</NMakeIncludeSearchPath>
-    <NMakeForcedIncludes>local_compat.h;$(SolutionDir)\solution_compat.h;compiler_compat.h;$(SolutionDir)\solution_post_compiler_compat.h;local_post_compiler_compat.h</NMakeForcedIncludes>
-	<NMakePreprocessorDefinitions>VCXPROJWRITER</NMakePreprocessorDefinitions>
-	<AdditionalOptions>/UVCXPROJWRITER</AdditionalOptions>
+    <NMakeIncludeSearchPath>$(ProjectDir)\include</NMakeIncludeSearchPath>
+    <NMakeForcedIncludes>local_compat.h;$(SolutionDir)\solution_compat.h;$(SolutionDir)\compiler_compat.h;$(SolutionDir)\solution_post_compiler_compat.h;local_post_compiler_compat.h</NMakeForcedIncludes>
+    <NMakePreprocessorDefinitions>VCXPROJWRITER</NMakePreprocessorDefinitions>
+    <AdditionalOptions>/UVCXPROJWRITER</AdditionalOptions>
     <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>
     <BuildCommandLine>false</BuildCommandLine>
     <ReBuildCommandLine>false</ReBuildCommandLine>
@@ -55,7 +56,7 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <CLanguageStandard>c89</CLanguageStandard>
-      <CppLanguageStandard>c++03</CppLanguageStandard>
+      <CppLanguageStandard>gnu++14</CppLanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -63,10 +64,10 @@
   <!-- https://habr.com/ru/post/448216/#comment_21649044 -->
   <PropertyGroup Label="Output Folders">
     <BuildDirSuffix>$(Configuration).$(Platform)\</BuildDirSuffix>
-	<BaseIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</BaseIntermediateOutputPath>
-	<IntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</IntermediateOutputPath>
-	<DesignTimeIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)\InProcessTempFiles</DesignTimeIntermediateOutputPath>
-	<MSBuildProjectExtensionsPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</MSBuildProjectExtensionsPath>
+    <BaseIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</IntermediateOutputPath>
+    <DesignTimeIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)\InProcessTempFiles</DesignTimeIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</MSBuildProjectExtensionsPath>
     <OutDir>$(SolutionDir)\build\$(Platform).$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\intermediate\$(Platform).$(Configuration)\</IntDir>
   </PropertyGroup>

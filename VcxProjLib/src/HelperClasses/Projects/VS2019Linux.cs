@@ -4,8 +4,10 @@ namespace VcxProjLib.HelperClasses.Projects {
     /// <remarks/>
     [System.Serializable]
     [System.ComponentModel.DesignerCategory("code")]
-    [System.Xml.Serialization.XmlType(AnonymousType = true, Namespace = "http://schemas.microsoft.com/developer/msbuild/2003")]
-    [System.Xml.Serialization.XmlRoot(Namespace = "http://schemas.microsoft.com/developer/msbuild/2003", IsNullable = false, ElementName = "Project")]
+    [System.Xml.Serialization.XmlType(AnonymousType = true
+          , Namespace = "http://schemas.microsoft.com/developer/msbuild/2003")]
+    [System.Xml.Serialization.XmlRoot(Namespace = "http://schemas.microsoft.com/developer/msbuild/2003"
+          , IsNullable = false, ElementName = "Project")]
     public class VS2019LinuxProject : VCXProject {
         private ProjectImport importField;
 

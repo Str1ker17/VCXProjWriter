@@ -11,6 +11,5 @@ namespace VcxProjLib {
         public static Crosspath CreateFromUnixDir(String dir) {
             return new Crosspath(dir);
         }
-
     }
 }
