@@ -56,7 +56,7 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <CLanguageStandard>c89</CLanguageStandard>
-      <CppLanguageStandard>gnu++14</CppLanguageStandard>
+      <CppLanguageStandard>gnu++1y</CppLanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

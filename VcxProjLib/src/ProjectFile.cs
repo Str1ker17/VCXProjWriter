@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Build.Logging;
+using VcxProjLib.CrosspathLib;
 
 namespace VcxProjLib {
     public class ProjectFile {
         protected static DefineNameComparer DefineNameComparerInstance = new DefineNameComparer();
 
-        public String FilePath { get; private set; }
+        public Crosspath FilePath { get; private set; }
         public HashSet<String> IncludeDirectories { get; private set; }
         public HashSet<Define> Defines { get; private set; }
 
-        public ProjectFile(String filePath) {
+        public ProjectFile(Crosspath filePath) {
             IncludeDirectories = new HashSet<String>();
             Defines = new HashSet<Define>(DefineNameComparerInstance);
-            FilePath = filePath;
+            FilePath = new Crosspath(filePath);
         }
 
         public bool AddIncludeDir(String includeDir) {
@@ -53,7 +54,7 @@ namespace VcxProjLib {
         /// </summary>
         /// <returns></returns>
         public Int64 HashProjectID() {
-            var hashIn = String.Empty.GetHashCode();
+            Int64 hashIn = String.Empty.GetHashCode();
             foreach (var inc in IncludeDirectories) {
                 hashIn += inc.GetHashCode();
             }

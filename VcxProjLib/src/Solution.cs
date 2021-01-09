@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using VcxProjLib.CrosspathLib;
 
 namespace VcxProjLib {
     public class Solution {
@@ -55,14 +56,13 @@ namespace VcxProjLib {
             int projectSerial = 1;
             foreach (CompileDBEntry entry in entries) {
                 // get full file path
-                String filepath = entry.file;
-                if (!Path.IsPathRooted(filepath)) {
-                    filepath = Path.GetFullPath(
-                            Path.Combine(entry.directory.Replace(SubstBefore, SubstAfter), filepath));
+                Crosspath xpath = new Crosspath(entry.file);
+                if (xpath.Origin == CrosspathOrigin.Relative) {
+                    xpath.Relative.SetWorkingDirectory(new Crosspath(entry.directory));
                 }
 
-                ProjectFile pf = new ProjectFile(filepath);
-                Console.WriteLine("===== file {0} =====", filepath);
+                ProjectFile pf = new ProjectFile(xpath);
+                Console.WriteLine("===== file {0} =====", xpath);
                 // parse arguments to obtain all -I, -D, -U
                 // start from 1 to skip compiler name
                 for (int i = 1; i < entry.arguments.Count; i++) {

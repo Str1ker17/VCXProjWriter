@@ -39,11 +39,11 @@ namespace VcxProjLib {
         }
 
         public bool AddProjectFile(ProjectFile pf) {
-            if (ProjectFiles.ContainsKey(pf.FilePath)) {
+            if (ProjectFiles.ContainsKey(pf.FilePath.ToAbsolutizedString())) {
                 return false;
             }
 
-            ProjectFiles.Add(pf.FilePath, pf);
+            ProjectFiles.Add(pf.FilePath.ToAbsolutizedString(), pf);
             return true;
         }
 
@@ -95,7 +95,7 @@ namespace VcxProjLib {
             projectItemGroupCompiles.SetAttribute("Label", "Source Files");
             foreach (ProjectFile projectFile in this.ProjectFiles.Values) {
                 XmlElement projectFileXmlElement = doc.CreateElement("ClCompile");
-                projectFileXmlElement.SetAttribute("Include", projectFile.FilePath);
+                projectFileXmlElement.SetAttribute("Include", projectFile.FilePath.ToAbsolutizedString());
                 projectItemGroupCompiles.AppendChild(projectFileXmlElement);
             }
 

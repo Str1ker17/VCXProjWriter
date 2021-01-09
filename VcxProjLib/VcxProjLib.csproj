@@ -41,33 +41,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SolutionStructure.cs" />
+    <Compile Include="src\CrosspathLib\AbsoluteCrosspath.cs" />
+    <Compile Include="src\CrosspathLib\RelativeCrosspath.cs" />
+    <Compile Include="src\SolutionStructure.cs" />
     <Compile Include="templates.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>templates.resx</DependentUpon>
     </Compile>
     <Compile Include="src\CompileDBEntry.cs" />
-    <Compile Include="src\Crosspath.cs" />
+    <Compile Include="src\CrosspathLib\Crosspath.cs" />
     <Compile Include="src\Define.cs" />
-    <Compile Include="src\HelperClasses\Filters\VS2019LinuxFilters.cs" />
-    <Compile Include="src\HelperClasses\Projects\VS2019Linux.cs" />
     <Compile Include="src\IncludeDirectoryType.cs" />
     <Compile Include="src\Project.cs" />
     <Compile Include="src\ProjectFile.cs" />
     <Compile Include="src\Solution.cs" />
-    <Compile Include="VCXProject.cs" />
+    <Compile Include="src\VCXProject.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="templates\Solution.props" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Sources\MvsSln\MvsSln\MvsSln.csproj">
-      <Project>{cca9c1bd-905b-4f42-975b-a419059c1f66}</Project>
-      <Name>MvsSln</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="templates.resx">
@@ -78,5 +72,6 @@
   <ItemGroup>
     <None Include="templates\Project2.vcxproj.filters" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
