@@ -1,27 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Build.Logging;
-using VcxProjLib.CrosspathLib;
+using CrosspathLib;
 
 namespace VcxProjLib {
     public class ProjectFile {
         protected static DefineNameComparer DefineNameComparerInstance = new DefineNameComparer();
 
-        public Crosspath FilePath { get; private set; }
-        public HashSet<String> IncludeDirectories { get; private set; }
-        public HashSet<Define> Defines { get; private set; }
+        public AbsoluteCrosspath FilePath { get; }
+        public HashSet<AbsoluteCrosspath> IncludeDirectories { get; }
+        public HashSet<Define> Defines { get; }
 
-        public ProjectFile(Crosspath filePath) {
-            IncludeDirectories = new HashSet<String>();
+        public ProjectFile(AbsoluteCrosspath filePath) {
+            IncludeDirectories = new HashSet<AbsoluteCrosspath>();
             Defines = new HashSet<Define>(DefineNameComparerInstance);
-            FilePath = new Crosspath(filePath);
+            FilePath = filePath;
         }
 
-        public bool AddIncludeDir(String includeDir) {
+        public Boolean AddIncludeDir(AbsoluteCrosspath includeDir) {
             return IncludeDirectories.Add(includeDir);
         }
 
-        public bool Define(String defineString) {
+        public Boolean Define(String defineString) {
             Define newDefine = new Define(defineString);
             if (Defines.Contains(newDefine)) {
                 Console.WriteLine("[!] warning: '{0}' redefined to '{1}'", newDefine.Name, newDefine.Value);
@@ -31,12 +30,12 @@ namespace VcxProjLib {
             return Defines.Add(newDefine);
         }
 
-        public bool Undefine(String undefineString) {
+        public Boolean Undefine(String undefineString) {
             return Defines.Remove(new Define(undefineString, VcxProjLib.Define.DefaultValue));
         }
 
         public void DumpData() {
-            foreach (String inc in IncludeDirectories) {
+            foreach (AbsoluteCrosspath inc in IncludeDirectories) {
                 Console.WriteLine("-I{0}", inc);
             }
 
@@ -54,7 +53,7 @@ namespace VcxProjLib {
         /// </summary>
         /// <returns></returns>
         public Int64 HashProjectID() {
-            Int64 hashIn = String.Empty.GetHashCode();
+            Int64 hashIn = string.Empty.GetHashCode();
             foreach (var inc in IncludeDirectories) {
                 hashIn += inc.GetHashCode();
             }
@@ -67,7 +66,7 @@ namespace VcxProjLib {
         }
 
         protected class DefineNameComparer : IEqualityComparer<Define> {
-            public bool Equals(Define x, Define y) {
+            public Boolean Equals(Define x, Define y) {
                 if (ReferenceEquals(x, y)) return true;
                 if (ReferenceEquals(x, null)) return false;
                 if (ReferenceEquals(y, null)) return false;
@@ -75,7 +74,7 @@ namespace VcxProjLib {
                 return x.Name == y.Name;
             }
 
-            public int GetHashCode(Define obj) {
+            public Int32 GetHashCode(Define obj) {
                 return obj.Name.GetHashCode();
             }
         }

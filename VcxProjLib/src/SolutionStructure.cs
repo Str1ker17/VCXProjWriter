@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace VcxProjLib {
     public static class SolutionStructure {
         public static readonly String SolutionFilename = @"Solution.sln";
         public static readonly String SolutionPropsFilename = @"Solution.props";
 
-        public static readonly List<String> SolutionConfigurations = new List<string> {
+        public static readonly List<String> SolutionConfigurations = new List<String> {
                 @"Debug|x64"
               , @"Release|x64"
         };
@@ -15,7 +14,7 @@ namespace VcxProjLib {
         public static ForcedIncludesStruct ForcedIncludes;
 
         // remember that forced includes may be per-project
-        public static readonly bool SeparateProjectsFromEachOther = true;
+        public static readonly Boolean SeparateProjectsFromEachOther = true;
 
         public static String ProjectFilePathFormat {
             get {

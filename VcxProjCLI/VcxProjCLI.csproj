@@ -39,6 +39,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CrosspathLib\CrosspathLib.csproj">
+      <Project>{BEB45228-C255-4B7C-92A1-D56FEE147533}</Project>
+      <Name>CrosspathLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VcxProjLib\VcxProjLib.csproj">
       <Project>{32ee318b-8666-4ff3-9255-a473d1b9cca6}</Project>
       <Name>VcxProjLib</Name>

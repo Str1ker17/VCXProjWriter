@@ -2,7 +2,7 @@
 
 namespace VcxProjLib {
     public class Define {
-        public static readonly char[] Separator = {'='};
+        public static readonly Char[] Separator = {'='};
         public static readonly String DefaultValue = "";
 
         public Define(String name, String value) {
@@ -21,7 +21,7 @@ namespace VcxProjLib {
             }
         }
 
-        public String Name { get; private set; }
+        public String Name { get; }
         public String Value { get; set; }
 
         public override String ToString() {

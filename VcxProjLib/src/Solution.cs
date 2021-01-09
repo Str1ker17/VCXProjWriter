@@ -2,19 +2,21 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using CrosspathLib;
 using Newtonsoft.Json;
-using VcxProjLib.CrosspathLib;
 
 namespace VcxProjLib {
     public class Solution {
         protected Dictionary<Int64, Project> Projects;
         protected HashSet<ProjectFile> SolutionFiles;
+        //protected HashSet<AbsoluteCrosspath> SolutionIncludeDirectories;
         protected Dictionary<IncludeDirectoryType, String> IncludeParam;
         protected HashSet<Guid> AcquiredGuids;
 
         protected Solution() {
             Projects = new Dictionary<Int64, Project>();
             SolutionFiles = new HashSet<ProjectFile>();
+            //SolutionIncludeDirectories = new HashSet<AbsoluteCrosspath>();
             IncludeParam = new Dictionary<IncludeDirectoryType, String> {
                     {IncludeDirectoryType.Generic, "-I"}, {IncludeDirectoryType.Quote, "-iquote"}
                   , {IncludeDirectoryType.System, "-isystem"}, {IncludeDirectoryType.DirAfter, "-idirafter"}
@@ -33,39 +35,51 @@ namespace VcxProjLib {
             return guid;
         }
 
-        public static Solution CreateSolutionFromCompileDB(String filename, String substBefore = "",
-                String substAfter = "") {
+        public static Solution CreateSolutionFromCompileDB(String filename) {
             Solution sln = new Solution();
-            sln.SetSubstitutePath(substBefore, substAfter);
             sln.ParseCompileDB(filename);
             return sln;
         }
 
-        protected String SubstBefore = String.Empty;
-        protected String SubstAfter = String.Empty;
-
-        public void SetSubstitutePath(String before, String after) {
-            SubstBefore = before;
-            SubstAfter = after;
+        /// <summary>
+        /// Can be called multiple times.
+        /// </summary>
+        /// <param name="before">Old base (e.g. Unix path where compiled)</param>
+        /// <param name="after">New base (e.g. Windows path where edited)</param>
+        public void Rebase(AbsoluteCrosspath before, AbsoluteCrosspath after) {
+            // move project files to another location
+            foreach (ProjectFile projectFile in SolutionFiles) {
+                projectFile.FilePath.Rebase(before, after);
+            }
+            // move include directories to another location
+            //foreach (AbsoluteCrosspath includeDir in SolutionIncludeDirectories) {
+            //    includeDir.Rebase(before, after);
+            //}
+            foreach (var project in Projects) {
+                foreach (AbsoluteCrosspath includeDir in project.Value.IncludeDirectories) {
+                    includeDir.Rebase(before, after);
+                }
+            }
         }
 
         protected void ParseCompileDB(String filename) {
             // hope compiledb is not so large to eat all the memory
             String compiledbRaw = File.ReadAllText(filename);
             List<CompileDBEntry> entries = JsonConvert.DeserializeObject<List<CompileDBEntry>>(compiledbRaw);
-            int projectSerial = 1;
+            Int32 projectSerial = 1;
             foreach (CompileDBEntry entry in entries) {
                 // get full file path
-                Crosspath xpath = new Crosspath(entry.file);
-                if (xpath.Origin == CrosspathOrigin.Relative) {
-                    xpath.Relative.SetWorkingDirectory(new Crosspath(entry.directory));
+                Crosspath xpath = Crosspath.FromString(entry.file);
+                if (xpath is RelativeCrosspath relXpath) {
+                    relXpath.SetWorkingDirectory(Crosspath.FromString(entry.directory) as AbsoluteCrosspath);
+                    xpath = relXpath.Absolutized();
                 }
 
-                ProjectFile pf = new ProjectFile(xpath);
+                ProjectFile pf = new ProjectFile(xpath as AbsoluteCrosspath);
                 Console.WriteLine("===== file {0} =====", xpath);
                 // parse arguments to obtain all -I, -D, -U
                 // start from 1 to skip compiler name
-                for (int i = 1; i < entry.arguments.Count; i++) {
+                for (Int32 i = 1; i < entry.arguments.Count; i++) {
                     String arg = entry.arguments[i];
                     // includes:
                     // -I
@@ -75,7 +89,7 @@ namespace VcxProjLib {
                     // ..., see https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html
                     // TODO: also process -nostdinc to control whether system include dirs should be added or not.
                     IncludeDirectoryType idt = IncludeDirectoryType.Null;
-                    String includeDir = String.Empty;
+                    String includeDir = string.Empty;
                     foreach (IncludeDirectoryType idk in IncludeParam.Keys) {
                         if (arg.StartsWith(IncludeParam[idk])) {
                             idt = idk;
@@ -97,12 +111,18 @@ namespace VcxProjLib {
                         }
 
                         // TODO: determine more accurately which include is local and which is remote
-                        if (includeDir[0] != '/') {
-                            includeDir = Path.GetFullPath(Path.Combine(entry.directory.Replace(SubstBefore, SubstAfter),
-                                    includeDir));
+                        Crosspath includeDirEx = Crosspath.FromString(includeDir);
+                        if (includeDirEx is RelativeCrosspath relIncludeDirEx) {
+                            relIncludeDirEx.SetWorkingDirectory(Crosspath.FromString(entry.directory) as AbsoluteCrosspath);
+                            includeDirEx = relIncludeDirEx.Absolutized();
                         }
 
-                        pf.AddIncludeDir(includeDir);
+                        AbsoluteCrosspath includeDirAbs = includeDirEx as AbsoluteCrosspath;
+                        // this causes objects flood bcz I first create objects, then trying to uniquize and not looking to references.
+                        // solution is not to use SolutionIncludeDirectories at all...
+                        //SolutionIncludeDirectories.(includeDirAbs);
+                        pf.AddIncludeDir(includeDirAbs);
+
                         //Console.WriteLine("[i] Added -I{0}", includeDir);
                         continue;
                     }
@@ -156,7 +176,7 @@ namespace VcxProjLib {
                 Int64 projectHash = pf.HashProjectID();
                 if (!Projects.ContainsKey(projectHash)) {
                     Projects.Add(projectHash
-                          , new Project(AllocateGuid(), String.Format("Project{0}", projectSerial++)
+                          , new Project(AllocateGuid(), string.Format("Project{0}", projectSerial++)
                                   , pf.IncludeDirectories, pf.Defines));
                 }
 
@@ -240,7 +260,7 @@ namespace VcxProjLib {
             sw.WriteLine('\t' + @"GlobalSection(ProjectConfigurationPlatforms) = postSolution");
             String[] cfgStages = {"ActiveCfg", "Build.0", "Deploy.0"};
             foreach (var project in Projects.Values) {
-                foreach (string cfg in SolutionStructure.SolutionConfigurations) {
+                foreach (String cfg in SolutionStructure.SolutionConfigurations) {
                     foreach (String cfgStage in cfgStages) {
                         sw.WriteLine(String.Format("\t\t{{{0}}}.{1}.{2} = {1}", project.Guid, cfg, cfgStage));
                     }

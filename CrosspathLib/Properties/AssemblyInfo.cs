@@ -2,14 +2,14 @@
 using System.Runtime.InteropServices;
 
 // Общие сведения об этой сборке предоставляются следующим набором
-// набора атрибутов. Измените значения этих атрибутов, чтобы изменить сведения,
+// набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанные со сборкой.
-[assembly: AssemblyTitle("VcxProjLib")]
+[assembly: AssemblyTitle("CrosspathLib")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("VCXProjWriter")]
-[assembly: AssemblyCopyright("Copyright (c) Str1ker, 2020-2021")]
+[assembly: AssemblyProduct("CrosspathLib")]
+[assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -19,16 +19,16 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Следующий GUID служит для идентификации библиотеки типов, если этот проект будет видимым для COM
-[assembly: Guid("32ee318b-8666-4ff3-9255-a473d1b9cca6")]
+[assembly: Guid("beb45228-c255-4b7c-92a1-d56fee147533")]
 
-// Сведения о версии сборки состоят из следующих четырех значений:
+// Сведения о версии сборки состоят из указанных ниже четырех значений:
 //
 //      Основной номер версии
 //      Дополнительный номер версии
-//   Номер сборки
+//      Номер сборки
 //      Редакция
 //
-// Можно задать все значения или принять номер сборки и номер редакции по умолчанию.
+// Можно задать все значения или принять номера сборки и редакции по умолчанию 
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]

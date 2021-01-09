@@ -1,44 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Xml;
+using CrosspathLib;
 
 namespace VcxProjLib {
     public class Project {
-        public Guid Guid { get; private set; }
+        public Guid Guid { get; }
         public String Name { get; set; }
 
         public String Filename {
-            get { return String.Format(SolutionStructure.ProjectFilePathFormat, Name); }
+            get { return string.Format(SolutionStructure.ProjectFilePathFormat, Name); }
         }
 
         /// <summary>
         /// Not only extra include directories, but system too.
         /// PRESERVE ORDER
         /// </summary>
-        public HashSet<String> IncludeDirectories { get; private set; }
+        public HashSet<AbsoluteCrosspath> IncludeDirectories { get; }
 
         /// <summary>
         /// Undefines form defines, removing item from then.
         /// Does not require to preserve order.
         /// </summary>
-        public HashSet<Define> Defines { get; private set; }
+        public HashSet<Define> Defines { get; }
 
-        public Dictionary<String, ProjectFile> ProjectFiles { get; private set; }
+        public Dictionary<String, ProjectFile> ProjectFiles { get; }
 
 
-        public Project(Guid guid, String name, HashSet<String> includeDirectories, HashSet<Define> defines) {
+        public Project(Guid guid, String name, HashSet<AbsoluteCrosspath> includeDirectories, HashSet<Define> defines) {
             Guid = guid;
             Name = name;
             // create copies, not references
-            IncludeDirectories = new HashSet<String>(includeDirectories);
+            IncludeDirectories = new HashSet<AbsoluteCrosspath>(includeDirectories);
             Defines = new HashSet<Define>(defines, new DefineExactComparer());
             // initialize an empty set
             ProjectFiles = new Dictionary<String, ProjectFile>();
         }
 
-        public bool AddProjectFile(ProjectFile pf) {
+        public Boolean AddProjectFile(ProjectFile pf) {
             if (ProjectFiles.ContainsKey(pf.FilePath.ToAbsolutizedString())) {
                 return false;
             }
@@ -47,7 +47,7 @@ namespace VcxProjLib {
             return true;
         }
 
-        public bool TestWhetherProjectFileBelongs(ProjectFile pf) {
+        public Boolean TestWhetherProjectFileBelongs(ProjectFile pf) {
             return IncludeDirectories.SetEquals(pf.IncludeDirectories) && Defines.SetEquals(pf.Defines);
         }
 
@@ -68,14 +68,14 @@ namespace VcxProjLib {
             XmlElement projectPropertyGroupGlobals = doc.CreateElement("PropertyGroup");
             projectPropertyGroupGlobals.SetAttribute("Label", "Globals");
             XmlElement projectGuid = doc.CreateElement("ProjectGuid");
-            projectGuid.InnerText = String.Format("{{{0}}}", Guid);
+            projectGuid.InnerText = string.Format("{{{0}}}", Guid);
             projectPropertyGroupGlobals.AppendChild(projectGuid);
             projectNode.AppendChild(projectPropertyGroupGlobals);
 
             // IDU settings
             XmlElement projectPropertyGroupIDU = doc.CreateElement("PropertyGroup");
             XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
-            foreach (String includePath in IncludeDirectories) {
+            foreach (Crosspath includePath in IncludeDirectories) {
                 projectIncludePaths.InnerText += includePath + ";";
             }
 
@@ -84,7 +84,7 @@ namespace VcxProjLib {
             //XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             XmlElement projectDefines = doc.CreateElement("NMakePreprocessorDefinitions");
             foreach (Define define in Defines) {
-                projectDefines.InnerText += define.ToString() + ";";
+                projectDefines.InnerText += define + ";";
             }
 
             projectPropertyGroupIDU.AppendChild(projectDefines);
@@ -119,12 +119,12 @@ namespace VcxProjLib {
 
             // compatibility files
             // TODO: add compatibility files directly to the project node
-            File.WriteAllText(String.Format(SolutionStructure.ForcedIncludes.LocalCompat, Path.GetDirectoryName(Filename)), @"");
-            File.WriteAllText(String.Format(SolutionStructure.ForcedIncludes.LocalPostCompat, Path.GetDirectoryName(Filename)), @"");
+            File.WriteAllText(string.Format(SolutionStructure.ForcedIncludes.LocalCompat, Path.GetDirectoryName(Filename)), @"");
+            File.WriteAllText(string.Format(SolutionStructure.ForcedIncludes.LocalPostCompat, Path.GetDirectoryName(Filename)), @"");
         }
 
         protected class DefineExactComparer : IEqualityComparer<Define> {
-            public bool Equals(Define x, Define y) {
+            public Boolean Equals(Define x, Define y) {
                 if (ReferenceEquals(x, y)) return true;
                 if (ReferenceEquals(x, null)) return false;
                 if (ReferenceEquals(y, null)) return false;
@@ -132,7 +132,7 @@ namespace VcxProjLib {
                 return x.Name == y.Name && x.Value == y.Value;
             }
 
-            public int GetHashCode(Define obj) {
+            public Int32 GetHashCode(Define obj) {
                 return obj.Name.GetHashCode();
             }
         }
