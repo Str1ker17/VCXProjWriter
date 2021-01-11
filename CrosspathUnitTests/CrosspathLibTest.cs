@@ -141,6 +141,9 @@ namespace CrosspathUnitTests {
             Assert.AreEqual(@"/path/to/file/source.c", (xpath as RelativeCrosspath).Absolutized().ToString());
         }
 
+        /// <summary>
+        /// Tests Crosspath.GetHashCode() and Crosspath.Equals() to be used in HashSet.
+        /// </summary>
         [TestMethod]
         public void HashDefaultEquality() {
             HashSet<Crosspath> hs = new HashSet<Crosspath>();
@@ -150,10 +153,11 @@ namespace CrosspathUnitTests {
         }
 
         [TestMethod]
-        public void RebaseFromUnixToWindowsTest1() {
+        public void RebaseFromUnixToWindowsTestFile() {
             Crosspath xpath = Crosspath.FromString("/local/store/bin-src/qemu/hw/display/trace.c");
-            AbsoluteCrosspath apath = (xpath as AbsoluteCrosspath).Rebase(Crosspath.FromString("/local/store/bin-src/qemu") as AbsoluteCrosspath
-                  , Crosspath.FromString(@"D:\Workspace\Source\qemu") as AbsoluteCrosspath);
+            AbsoluteCrosspath before = Crosspath.FromString("/local/store/bin-src/qemu") as AbsoluteCrosspath;
+            AbsoluteCrosspath after = Crosspath.FromString(@"D:\Workspace\Source\qemu") as AbsoluteCrosspath;
+            AbsoluteCrosspath apath = (xpath as AbsoluteCrosspath).Rebase(before, after);
             Assert.AreEqual(CrosspathFlavor.Windows, apath.Flavor);
             Assert.AreEqual('D', apath.WindowsRootDrive);
             Assert.AreEqual(@"D:\Workspace\Source\qemu\hw\display\trace.c", apath.ToString());
@@ -163,8 +167,9 @@ namespace CrosspathUnitTests {
         [TestMethod]
         public void RebaseFromUnixToWindowsTestFull() {
             Crosspath xpath = Crosspath.FromString("/local/store/bin-src/qemu");
-            AbsoluteCrosspath apath = (xpath as AbsoluteCrosspath).Rebase(Crosspath.FromString("/local/store/bin-src/qemu") as AbsoluteCrosspath
-                  , Crosspath.FromString(@"D:\Workspace\Source\qemu") as AbsoluteCrosspath);
+            AbsoluteCrosspath before = Crosspath.FromString("/local/store/bin-src/qemu") as AbsoluteCrosspath;
+            AbsoluteCrosspath after = Crosspath.FromString(@"D:\Workspace\Source\qemu") as AbsoluteCrosspath;
+            AbsoluteCrosspath apath = (xpath as AbsoluteCrosspath).Rebase(before, after);
             Assert.AreEqual(CrosspathFlavor.Windows, apath.Flavor);
             Assert.AreEqual('D', apath.WindowsRootDrive);
             Assert.AreEqual(@"D:\Workspace\Source\qemu", apath.ToString());

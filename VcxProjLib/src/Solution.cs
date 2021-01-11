@@ -12,6 +12,7 @@ namespace VcxProjLib {
         //protected HashSet<AbsoluteCrosspath> SolutionIncludeDirectories;
         protected Dictionary<IncludeDirectoryType, String> IncludeParam;
         protected HashSet<Guid> AcquiredGuids;
+        public static Boolean DebugOutput { get; set; } = false;
 
         protected Solution() {
             Projects = new Dictionary<Int64, Project>();

@@ -42,9 +42,10 @@
   <ItemGroup>
     <Compile Include="AbsoluteCrosspath.cs" />
     <Compile Include="Crosspath.cs" />
-    <Compile Include="CrosspathLibPolymorphismException.cs" />
+    <Compile Include="misc\CrosspathLibPolymorphismException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RelativeCrosspath.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

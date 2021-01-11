@@ -174,6 +174,13 @@ namespace CrosspathLib {
             return this.ToAbsolutizedString().GetHashCode();
         }
 
+        /// <summary>
+        /// This is to find out which _paths_ are identical in filesystem.
+        /// WARNING: this override leads to situation when multiple Crosspath instances are
+        /// 
+        /// </summary>
+        /// <param name="obj">Object to compare with.</param>
+        /// <returns>True if objects represent the same path in filesystem; false otherwise.</returns>
         public override Boolean Equals(Object obj) {
             if (!(obj is Crosspath)) {
                 return false;
