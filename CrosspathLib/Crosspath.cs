@@ -18,72 +18,71 @@ namespace CrosspathLib {
         public CrosspathFlavor Flavor { get; protected set; }
         public Char WindowsRootDrive { get; protected set; }
 
-        protected LinkedList<String> directories;
+        protected LinkedList<String> Directories;
 
         // we have to process all possible conditions:
         // relative and absolute paths;
         // Windows and Unix paths.
         // also we need some flavor-agnostic internal format to store paths
 
-        //[Obsolete]
-        protected Crosspath() { }
+        // ReSharper disable once UnusedMember.Global
+        protected Crosspath() {
+        }
 
         /// <summary>
         /// Creates a copy of Crosspath instance.
         /// </summary>
         /// <param name="xpath">Source instance.</param>
         protected Crosspath(Crosspath xpath) {
-            this.SourceString = xpath.SourceString;
-            this.Origin = xpath.Origin;
-            this.Flavor = xpath.Flavor;
-            this.WindowsRootDrive = xpath.WindowsRootDrive;
-            
-            this.directories = new LinkedList<String>(xpath.directories);
+            SourceString = xpath.SourceString;
+            Origin = xpath.Origin;
+            Flavor = xpath.Flavor;
+            WindowsRootDrive = xpath.WindowsRootDrive;
+
+            Directories = new LinkedList<String>(xpath.Directories);
         }
 
         protected static void DetectParams(String path, out CrosspathOrigin origin, out CrosspathFlavor flavor, out Char rootDrive) {
             // Windows supports both / and \
             // while Unix supports only / but uses \ for escaping
-            do {
-                rootDrive = 'A';
-                if (path.Length >= 1 && path[0] == '/') {
-                    flavor = CrosspathFlavor.Unix;
-                    origin = CrosspathOrigin.Absolute;
-                    break;
-                }
-
-                if (path.Length >= 2 && path[1] == ':') {
-                    flavor = CrosspathFlavor.Windows;
-                    origin = CrosspathOrigin.Absolute;
-                    rootDrive = path[0];
-                    break;
-                }
-
-                origin = CrosspathOrigin.Relative;
-
-                // fast check
-                //bool has_forward_slash = false;
-                for (Int32 pos = 0; pos < path.Length; ++pos) {
-                    if (path[pos] == '\\') {
-                        // assume for now that Unix paths do not contain backslashes
-                        flavor = CrosspathFlavor.Windows;
-                        return;
-                    }
-
-                    //if (path[pos] == '/') {
-                    //    has_forward_slash = true;
-                    //}
-                }
-
-                //if (has_forward_slash) {
-                //    this.Flavor = CrosspathFlavor.FlavorUnix;
-                //}
-                //else {
-                //    this.Flavor = CrosspathFlavor.Compatible;
-                //}
-                // keep it simple instead
+            rootDrive = 'A';
+            if (path.Length >= 1 && path[0] == '/') {
                 flavor = CrosspathFlavor.Unix;
-            } while (false);
+                origin = CrosspathOrigin.Absolute;
+                return;
+            }
+
+            if (path.Length >= 2 && path[1] == ':') {
+                flavor = CrosspathFlavor.Windows;
+                origin = CrosspathOrigin.Absolute;
+                rootDrive = path[0];
+                return;
+            }
+
+            origin = CrosspathOrigin.Relative;
+
+            // fast check
+            //bool has_forward_slash = false;
+            foreach (Char c in path) {
+                if (c == '\\') {
+                    // assume for now that Unix paths do not contain backslashes
+                    flavor = CrosspathFlavor.Windows;
+                    return;
+                }
+
+                //if (path[pos] == '/') {
+                //    has_forward_slash = true;
+                //}
+            }
+
+            //if (has_forward_slash) {
+            //    this.Flavor = CrosspathFlavor.FlavorUnix;
+            //}
+            //else {
+            //    this.Flavor = CrosspathFlavor.Compatible;
+            //}
+            // keep it simple instead
+            flavor = CrosspathFlavor.Unix;
         }
 
         public static Crosspath FromString(String path) {
@@ -105,7 +104,7 @@ namespace CrosspathLib {
             xpath.Flavor = flavor;
             xpath.WindowsRootDrive = rootDrive;
             xpath.SourceString = path;
-            xpath.directories = new LinkedList<String>();
+            xpath.Directories = new LinkedList<String>();
 
             // push directories
             String[] parts;
@@ -131,7 +130,6 @@ namespace CrosspathLib {
         ///public Boolean IsAbsolute() {
         ///    return this.Origin == CrosspathOrigin.Absolute;
         ///}
-
         /// <summary>
         /// 
         /// </summary>
@@ -141,12 +139,12 @@ namespace CrosspathLib {
                 return;
             if (dir == "..") {
                 if (this is AbsoluteCrosspath) {
-                    directories.RemoveLast();
+                    Directories.RemoveLast();
                     return;
                 }
             }
 
-            directories.AddLast(dir);
+            Directories.AddLast(dir);
         }
 
         public Crosspath Append(RelativeCrosspath part) {
@@ -154,14 +152,15 @@ namespace CrosspathLib {
             //    throw new ArgumentOutOfRangeException(nameof(part), "appended part should be relative");
             //}
 
-            foreach (String dir in part.directories) {
-                this.Chdir(dir);
+            foreach (String dir in part.Directories) {
+                Chdir(dir);
             }
 
             return this;
         }
 
         public abstract String ToAbsolutizedString();
+
         public override String ToString() {
             throw new NotImplementedException("this class is not stringizable");
         }
@@ -171,7 +170,7 @@ namespace CrosspathLib {
         /// </summary>
         /// <returns>Hash code of an absolutized string.</returns>
         public override Int32 GetHashCode() {
-            return this.ToAbsolutizedString().GetHashCode();
+            return ToAbsolutizedString().GetHashCode();
         }
 
         /// <summary>
@@ -186,7 +185,7 @@ namespace CrosspathLib {
                 return false;
             }
 
-            return ((Crosspath) obj).ToAbsolutizedString() == this.ToAbsolutizedString();
+            return ((Crosspath) obj).ToAbsolutizedString() == ToAbsolutizedString();
         }
     }
 }

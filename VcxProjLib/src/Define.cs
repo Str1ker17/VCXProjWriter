@@ -13,6 +13,7 @@ namespace VcxProjLib {
         public Define(String defineString) {
             String[] parts = defineString.Split(Separator, 2, StringSplitOptions.RemoveEmptyEntries);
             Name = parts[0];
+            // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
             if (parts.Length < 2) {
                 Value = DefaultValue;
             }

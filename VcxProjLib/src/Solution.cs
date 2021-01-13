@@ -8,29 +8,39 @@ using Newtonsoft.Json;
 namespace VcxProjLib {
     public class Solution {
         protected Dictionary<Int64, Project> Projects;
+
         protected HashSet<ProjectFile> SolutionFiles;
-        //protected HashSet<AbsoluteCrosspath> SolutionIncludeDirectories;
+
+        // since we can construct the same absolute path from different combination of relative path
+        // and working directory, the 'String' is reconstructed abspath, which is unique.
+        protected Dictionary<String, AbsoluteCrosspath> SolutionIncludeDirectories;
         protected Dictionary<IncludeDirectoryType, String> IncludeParam;
         protected HashSet<Guid> AcquiredGuids;
-        public static Boolean DebugOutput { get; set; } = false;
+        protected Guid SelfGuid;
 
         protected Solution() {
             Projects = new Dictionary<Int64, Project>();
             SolutionFiles = new HashSet<ProjectFile>();
-            //SolutionIncludeDirectories = new HashSet<AbsoluteCrosspath>();
+            SolutionIncludeDirectories = new Dictionary<String, AbsoluteCrosspath>();
             IncludeParam = new Dictionary<IncludeDirectoryType, String> {
-                    {IncludeDirectoryType.Generic, "-I"}, {IncludeDirectoryType.Quote, "-iquote"}
-                  , {IncludeDirectoryType.System, "-isystem"}, {IncludeDirectoryType.DirAfter, "-idirafter"}
+                    {IncludeDirectoryType.Generic, "-I"}
+                  , {IncludeDirectoryType.Quote, "-iquote"}
+                  , {IncludeDirectoryType.System, "-isystem"}
+                  , {IncludeDirectoryType.DirAfter, "-idirafter"}
             };
             AcquiredGuids = new HashSet<Guid>();
+            SelfGuid = AllocateGuid();
         }
 
         protected Guid AllocateGuid() {
             Guid guid;
             while (true) {
                 guid = Guid.NewGuid();
-                if (!AcquiredGuids.Contains(guid))
+                if (!AcquiredGuids.Contains(guid)) {
+                    // lol how I forgot this
+                    AcquiredGuids.Add(guid);
                     break;
+                }
             }
 
             return guid;
@@ -52,15 +62,17 @@ namespace VcxProjLib {
             foreach (ProjectFile projectFile in SolutionFiles) {
                 projectFile.FilePath.Rebase(before, after);
             }
+
             // move include directories to another location
-            //foreach (AbsoluteCrosspath includeDir in SolutionIncludeDirectories) {
-            //    includeDir.Rebase(before, after);
-            //}
-            foreach (var project in Projects) {
-                foreach (AbsoluteCrosspath includeDir in project.Value.IncludeDirectories) {
-                    includeDir.Rebase(before, after);
-                }
+            foreach (KeyValuePair<String, AbsoluteCrosspath> includeDirPair in SolutionIncludeDirectories) {
+                includeDirPair.Value.Rebase(before, after);
             }
+            
+            //foreach (var project in Projects) {
+            //    foreach (AbsoluteCrosspath includeDir in project.Value.IncludeDirectories) {
+            //        includeDir.Rebase(before, after);
+            //    }
+            //}
         }
 
         protected void ParseCompileDB(String filename) {
@@ -70,14 +82,18 @@ namespace VcxProjLib {
             Int32 projectSerial = 1;
             foreach (CompileDBEntry entry in entries) {
                 // get full file path
-                Crosspath xpath = Crosspath.FromString(entry.file);
-                if (xpath is RelativeCrosspath relXpath) {
+                AbsoluteCrosspath xpath;
+                Crosspath tmpXpath = Crosspath.FromString(entry.file);
+                if (tmpXpath is RelativeCrosspath relXpath) {
                     relXpath.SetWorkingDirectory(Crosspath.FromString(entry.directory) as AbsoluteCrosspath);
                     xpath = relXpath.Absolutized();
                 }
+                else {
+                    xpath = tmpXpath as AbsoluteCrosspath;
+                }
 
-                ProjectFile pf = new ProjectFile(xpath as AbsoluteCrosspath);
-                Console.WriteLine("===== file {0} =====", xpath);
+                ProjectFile pf = new ProjectFile(xpath);
+                Logger.WriteLine($"===== file {xpath} =====");
                 // parse arguments to obtain all -I, -D, -U
                 // start from 1 to skip compiler name
                 for (Int32 i = 1; i < entry.arguments.Count; i++) {
@@ -89,42 +105,54 @@ namespace VcxProjLib {
                     // -idirafter
                     // ..., see https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html
                     // TODO: also process -nostdinc to control whether system include dirs should be added or not.
+                    // TODO: preserve priority between -I, -iquote and other include dir types
                     IncludeDirectoryType idt = IncludeDirectoryType.Null;
-                    String includeDir = string.Empty;
+                    String includeDirStr = String.Empty;
                     foreach (IncludeDirectoryType idk in IncludeParam.Keys) {
                         if (arg.StartsWith(IncludeParam[idk])) {
                             idt = idk;
-                            includeDir = arg.Substring(IncludeParam[idk].Length);
+                            includeDirStr = arg.Substring(IncludeParam[idk].Length);
                             break;
                         }
                     }
 
                     if (idt != IncludeDirectoryType.Null) {
-                        if (includeDir == "") {
+                        if (includeDirStr == "") {
                             // this is a bit hacky
                             if (entry.arguments[i + 1][0] == '-') {
                                 // the next arg is an option itself; this is a build system failure so skip
                                 continue;
                             }
 
-                            includeDir = entry.arguments[i + 1];
+                            includeDirStr = entry.arguments[i + 1];
                             ++i;
                         }
 
-                        // TODO: determine more accurately which include is local and which is remote
-                        Crosspath includeDirEx = Crosspath.FromString(includeDir);
-                        if (includeDirEx is RelativeCrosspath relIncludeDirEx) {
+                        // DONE: determine more accurately which include is local and which is remote
+                        // this is done with the use of Solution.Rebase() so we customly point to local files
+                        AbsoluteCrosspath includeDir;
+                        Crosspath includeDirTmp = Crosspath.FromString(includeDirStr);
+                        if (includeDirTmp is RelativeCrosspath relIncludeDirEx) {
                             relIncludeDirEx.SetWorkingDirectory(Crosspath.FromString(entry.directory) as AbsoluteCrosspath);
-                            includeDirEx = relIncludeDirEx.Absolutized();
+                            includeDir = relIncludeDirEx.Absolutized();
+                        }
+                        else {
+                            includeDir = includeDirTmp as AbsoluteCrosspath;
                         }
 
-                        AbsoluteCrosspath includeDirAbs = includeDirEx as AbsoluteCrosspath;
-                        // this causes objects flood bcz I first create objects, then trying to uniquize and not looking to references.
-                        // solution is not to use SolutionIncludeDirectories at all...
-                        //SolutionIncludeDirectories.(includeDirAbs);
-                        pf.AddIncludeDir(includeDirAbs);
+                        String includeDirStrReconstructed = includeDir.ToString();
+                        if (!SolutionIncludeDirectories.ContainsKey(includeDirStrReconstructed)) {
+                            SolutionIncludeDirectories.Add(includeDirStrReconstructed, includeDir);
+                            Logger.WriteLine($"New include directory '{includeDirStrReconstructed}'");
+                        }
+                        else {
+                            // if this include directory is already known, then drop current object and get old reference
+                            includeDir = SolutionIncludeDirectories[includeDirStrReconstructed];
+                        }
 
-                        //Console.WriteLine("[i] Added -I{0}", includeDir);
+                        // relax if we're adding the same include directory twice
+                        pf.AddIncludeDir(includeDir);
+
                         continue;
                     }
 
@@ -176,9 +204,7 @@ namespace VcxProjLib {
                 //pf.DumpData();
                 Int64 projectHash = pf.HashProjectID();
                 if (!Projects.ContainsKey(projectHash)) {
-                    Projects.Add(projectHash
-                          , new Project(AllocateGuid(), string.Format("Project{0}", projectSerial++)
-                                  , pf.IncludeDirectories, pf.Defines));
+                    Projects.Add(projectHash, new Project(AllocateGuid(), $"Project{projectSerial++}", pf.IncludeDirectories, pf.Defines));
                 }
 
                 // add file to project
@@ -196,22 +222,61 @@ namespace VcxProjLib {
             Console.WriteLine("[i] Created a solution of {0} projects from {1} files", Projects.Count,
                     SolutionFiles.Count);
             Console.WriteLine();
-            foreach (var projectKvp in Projects) {
-                Console.WriteLine("# Project ID {0}", projectKvp.Key);
-                foreach (var file in projectKvp.Value.ProjectFiles) {
-                    Console.WriteLine("# > {0}", file.Value.FilePath);
-                }
 
-                using (var enumerator = projectKvp.Value.ProjectFiles.GetEnumerator()) {
-                    enumerator.MoveNext();
-                    enumerator.Current.Value.DumpData();
-                }
+            if (Logger.DebugOutput) {
+                foreach (var projectKvp in Projects) {
+                    Console.WriteLine("# Project ID {0}", projectKvp.Key);
+                    foreach (var file in projectKvp.Value.ProjectFiles) {
+                        Console.WriteLine("# > {0}", file.Value.FilePath);
+                    }
 
-                Console.WriteLine("============================================");
+                    using (var enumerator = projectKvp.Value.ProjectFiles.GetEnumerator()) {
+                        enumerator.MoveNext();
+                        enumerator.Current.Value.DumpData();
+                    }
+
+                    Console.WriteLine("============================================");
+                }
             }
 
             // put a breakpoint here
             //Console.Read();
+        }
+
+        public void CheckForTotalRebase() {
+            foreach (KeyValuePair<String, AbsoluteCrosspath> includeDirPair in SolutionIncludeDirectories) {
+                if (includeDirPair.Value.Flavor == CrosspathFlavor.Unix) {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write("[!] ");
+                    Console.ResetColor();
+                    Console.WriteLine($"the remote include directory '{includeDirPair.Value}' was not rebased");
+                }
+                else if (includeDirPair.Value.Flavor == CrosspathFlavor.Windows) {
+                    if (!Directory.Exists(includeDirPair.Value.ToString())) {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.Write("[!] ");
+                        Console.ResetColor();
+                        Console.WriteLine($"directory '{includeDirPair.Value}' does not exist after rebase");
+                    }
+                }
+            }
+
+            foreach (ProjectFile pf in SolutionFiles) {
+                if (pf.FilePath.Flavor == CrosspathFlavor.Unix) {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write("[!] ");
+                    Console.ResetColor();
+                    Console.WriteLine($"project file '{pf.FilePath}' was not rebased and won't be accessible");
+                }
+                else if (pf.FilePath.Flavor == CrosspathFlavor.Windows) {
+                    if (!File.Exists(pf.FilePath.ToString())) {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.Write("[!] ");
+                        Console.ResetColor();
+                        Console.WriteLine($"project file '{pf.FilePath}' does not exist after rebase");
+                    }
+                }
+            }
         }
 
         public void WriteToDirectory(String directory) {
@@ -225,9 +290,10 @@ namespace VcxProjLib {
             }
 
             // TODO: add them as "Solution Items"
-            File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionCompat, @"");
-            File.WriteAllText(SolutionStructure.ForcedIncludes.CompilerCompat, @"");
+            File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionCompat, @"#pragma once");
+            File.WriteAllText(SolutionStructure.ForcedIncludes.CompilerCompat, @"#pragma once");
             File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionPostCompat, @"
+#pragma once
 #undef _WIN32
 ");
 //#undef _MSC_VER
@@ -246,15 +312,14 @@ namespace VcxProjLib {
             sw.WriteLine(@"VisualStudioVersion = 16.0.30804.86");
             sw.WriteLine(@"MinimumVisualStudioVersion = 10.0.40219.1");
             foreach (var project in Projects.Values) {
-                sw.WriteLine(String.Format(@"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{3}""", AllocateGuid()
-                      , project.Name, project.Filename, project.Guid));
+                sw.WriteLine($@"Project(""{{{AllocateGuid()}}}"") = ""{project.Name}"", ""{project.Filename}"", ""{project.Guid}""");
                 sw.WriteLine("EndProject");
             }
 
             sw.WriteLine(@"Global");
             sw.WriteLine('\t' + @"GlobalSection(SolutionConfigurationPlatforms) = preSolution");
             foreach (var cfg in SolutionStructure.SolutionConfigurations) {
-                sw.WriteLine(String.Format("\t\t{0} = {0}", cfg));
+                sw.WriteLine($"\t\t{cfg} = {cfg}");
             }
 
             sw.WriteLine(@"EndGlobalSection");
@@ -263,7 +328,7 @@ namespace VcxProjLib {
             foreach (var project in Projects.Values) {
                 foreach (String cfg in SolutionStructure.SolutionConfigurations) {
                     foreach (String cfgStage in cfgStages) {
-                        sw.WriteLine(String.Format("\t\t{{{0}}}.{1}.{2} = {1}", project.Guid, cfg, cfgStage));
+                        sw.WriteLine($"\t\t{{{project.Guid}}}.{cfg}.{cfgStage} = {cfg}");
                     }
                 }
             }
@@ -273,10 +338,12 @@ namespace VcxProjLib {
             sw.WriteLine("\t\tHideSolutionNode = FALSE");
             sw.WriteLine("\tEndGlobalSection");
             sw.WriteLine("\tGlobalSection(ExtensibilityGlobals) = postSolution");
-            sw.WriteLine(String.Format("\t\tSolutionGuid = {{{0}}}", AllocateGuid()));
+            sw.WriteLine($"\t\tSolutionGuid = {{{SelfGuid}}}");
             sw.WriteLine("\tEndGlobalSection");
             sw.WriteLine("EndGlobal");
             sw.Close();
+
+            Directory.SetCurrentDirectory(pwd);
         }
     }
 }

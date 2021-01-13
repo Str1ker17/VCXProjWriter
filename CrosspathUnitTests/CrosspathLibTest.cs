@@ -6,14 +6,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CrosspathUnitTests {
     [TestClass]
     public class CrosspathLibTest {
-        
         [TestMethod]
         public void Polymorphism() {
             Crosspath cpath = Crosspath.FromString(@"/");
             AbsoluteCrosspath apath = cpath as AbsoluteCrosspath;
             RelativeCrosspath rpath = cpath as RelativeCrosspath;
         }
-        
+
         [TestMethod]
         public void DynamicReturn() {
             Crosspath cpath = Crosspath.FromString(@"/");
@@ -70,7 +69,6 @@ namespace CrosspathUnitTests {
                 Assert.Fail("should fail");
             }
             catch (CrosspathLibPolymorphismException) {
-
             }
         }
 

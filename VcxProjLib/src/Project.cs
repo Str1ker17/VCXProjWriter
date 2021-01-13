@@ -10,7 +10,10 @@ namespace VcxProjLib {
         public String Name { get; set; }
 
         public String Filename {
-            get { return string.Format(SolutionStructure.ProjectFilePathFormat, Name); }
+            // ReSharper disable once ArrangeAccessorOwnerBody
+            get {
+                return string.Format(SolutionStructure.ProjectFilePathFormat, Name);
+            }
         }
 
         /// <summary>
@@ -68,14 +71,14 @@ namespace VcxProjLib {
             XmlElement projectPropertyGroupGlobals = doc.CreateElement("PropertyGroup");
             projectPropertyGroupGlobals.SetAttribute("Label", "Globals");
             XmlElement projectGuid = doc.CreateElement("ProjectGuid");
-            projectGuid.InnerText = string.Format("{{{0}}}", Guid);
+            projectGuid.InnerText = $"{{{Guid}}}";
             projectPropertyGroupGlobals.AppendChild(projectGuid);
             projectNode.AppendChild(projectPropertyGroupGlobals);
 
             // IDU settings
             XmlElement projectPropertyGroupIDU = doc.CreateElement("PropertyGroup");
             XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
-            foreach (Crosspath includePath in IncludeDirectories) {
+            foreach (AbsoluteCrosspath includePath in IncludeDirectories) {
                 projectIncludePaths.InnerText += includePath + ";";
             }
 
@@ -119,8 +122,11 @@ namespace VcxProjLib {
 
             // compatibility files
             // TODO: add compatibility files directly to the project node
-            File.WriteAllText(string.Format(SolutionStructure.ForcedIncludes.LocalCompat, Path.GetDirectoryName(Filename)), @"");
-            File.WriteAllText(string.Format(SolutionStructure.ForcedIncludes.LocalPostCompat, Path.GetDirectoryName(Filename)), @"");
+            File.WriteAllText(
+                    string.Format(SolutionStructure.ForcedIncludes.LocalCompat, Path.GetDirectoryName(Filename)), @"");
+            File.WriteAllText(
+                    string.Format(SolutionStructure.ForcedIncludes.LocalPostCompat, Path.GetDirectoryName(Filename))
+                  , @"");
         }
 
         protected class DefineExactComparer : IEqualityComparer<Define> {

@@ -26,7 +26,7 @@ namespace CrosspathLib {
         /// </summary>
         /// <returns></returns>
         public override String ToString() {
-            if (directories.Count == 0) {
+            if (Directories.Count == 0) {
                 return "/";
             }
 
@@ -42,7 +42,7 @@ namespace CrosspathLib {
                     throw new ArgumentOutOfRangeException();
             }
 
-            foreach (String dir in directories) {
+            foreach (String dir in Directories) {
                 switch (Flavor) {
                     case CrosspathFlavor.Windows:
                         sb.Append('\\');
@@ -75,17 +75,17 @@ namespace CrosspathLib {
         /// <param name="newBase"></param>
         /// <returns></returns>
         public AbsoluteCrosspath Rebase(AbsoluteCrosspath oldBase, AbsoluteCrosspath newBase) {
-            if (directories.Count < oldBase.directories.Count) {
+            if (Directories.Count < oldBase.Directories.Count) {
                 return this;
             }
 
-            if (directories.Count == 0) {
+            if (Directories.Count == 0) {
             }
 
             Boolean cantRebase = false;
-            var myIter = directories.GetEnumerator();
-            var theirsIter = oldBase.directories.GetEnumerator();
-            for (int idx = 0; idx < oldBase.directories.Count; idx++) {
+            var myIter = Directories.GetEnumerator();
+            var theirsIter = oldBase.Directories.GetEnumerator();
+            for (int idx = 0; idx < oldBase.Directories.Count; idx++) {
                 myIter.MoveNext();
                 theirsIter.MoveNext();
                 if (myIter.Current != theirsIter.Current) {
@@ -102,19 +102,19 @@ namespace CrosspathLib {
             }
 
             // rebasing
-            if (directories.Count == oldBase.directories.Count) {
+            if (Directories.Count == oldBase.Directories.Count) {
                 // full rebase, replacing the whole path
-                directories = new LinkedList<String>(newBase.directories);
+                Directories = new LinkedList<String>(newBase.Directories);
             }
             else {
-                for (int idx = 0; idx < oldBase.directories.Count; idx++) {
-                    directories.RemoveFirst();
+                for (int idx = 0; idx < oldBase.Directories.Count; idx++) {
+                    Directories.RemoveFirst();
                 }
 
-                LinkedListNode<String> lln = directories.First;
+                LinkedListNode<String> lln = Directories.First;
 
-                foreach (String dir in newBase.directories) {
-                    directories.AddBefore(lln, dir);
+                foreach (String dir in newBase.Directories) {
+                    Directories.AddBefore(lln, dir);
                 }
             }
 

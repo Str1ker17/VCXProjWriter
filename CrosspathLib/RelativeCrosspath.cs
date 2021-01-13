@@ -7,7 +7,8 @@ namespace CrosspathLib {
             return new RelativeCrosspath();
         }
 
-        protected RelativeCrosspath() { }
+        protected RelativeCrosspath() {
+        }
 
         public AbsoluteCrosspath WorkingDirectory { get; private set; }
 
@@ -28,18 +29,17 @@ namespace CrosspathLib {
             // - self is relative
             // - working directory is absolute
             return new AbsoluteCrosspath(WorkingDirectory).Append(this) as AbsoluteCrosspath;
-            
         }
 
         public override String ToString() {
             // filter out .. and .
-            if (directories.Count == 0) {
+            if (Directories.Count == 0) {
                 return string.Empty;
             }
 
             // we need to inverse stack before output
             StringBuilder sb = new StringBuilder();
-            foreach (String dir in directories) {
+            foreach (String dir in Directories) {
                 sb.Append(dir);
                 switch (Flavor) {
                     case CrosspathFlavor.Windows:
@@ -59,7 +59,8 @@ namespace CrosspathLib {
 
         public override String ToAbsolutizedString() {
             if (WorkingDirectory is null) {
-                throw new CrosspathLibPolymorphismException("attempt to absolutize RelativePath without a WorkingDirectory");
+                throw new CrosspathLibPolymorphismException(
+                        "attempt to absolutize RelativePath without a WorkingDirectory");
             }
 
             return (new AbsoluteCrosspath(WorkingDirectory).Append(this) as AbsoluteCrosspath).ToString();

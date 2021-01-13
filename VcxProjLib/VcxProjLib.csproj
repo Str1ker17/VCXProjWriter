@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\Logger.cs" />
     <Compile Include="src\SolutionStructure.cs" />
     <Compile Include="templates.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -63,6 +64,7 @@
     <EmbeddedResource Include="templates.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>templates.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
