@@ -18,7 +18,7 @@ namespace CrosspathLib {
         public CrosspathFlavor Flavor { get; protected set; }
         public Char WindowsRootDrive { get; protected set; }
 
-        protected LinkedList<String> Directories;
+        protected LinkedList<String> directories;
 
         // we have to process all possible conditions:
         // relative and absolute paths;
@@ -39,7 +39,7 @@ namespace CrosspathLib {
             Flavor = xpath.Flavor;
             WindowsRootDrive = xpath.WindowsRootDrive;
 
-            Directories = new LinkedList<String>(xpath.Directories);
+            directories = new LinkedList<String>(xpath.directories);
         }
 
         protected static void DetectParams(String path, out CrosspathOrigin origin, out CrosspathFlavor flavor, out Char rootDrive) {
@@ -104,7 +104,7 @@ namespace CrosspathLib {
             xpath.Flavor = flavor;
             xpath.WindowsRootDrive = rootDrive;
             xpath.SourceString = path;
-            xpath.Directories = new LinkedList<String>();
+            xpath.directories = new LinkedList<String>();
 
             // push directories
             String[] parts;
@@ -139,12 +139,12 @@ namespace CrosspathLib {
                 return;
             if (dir == "..") {
                 if (this is AbsoluteCrosspath) {
-                    Directories.RemoveLast();
+                    directories.RemoveLast();
                     return;
                 }
             }
 
-            Directories.AddLast(dir);
+            directories.AddLast(dir);
         }
 
         public Crosspath Append(RelativeCrosspath part) {
@@ -152,7 +152,7 @@ namespace CrosspathLib {
             //    throw new ArgumentOutOfRangeException(nameof(part), "appended part should be relative");
             //}
 
-            foreach (String dir in part.Directories) {
+            foreach (String dir in part.directories) {
                 Chdir(dir);
             }
 

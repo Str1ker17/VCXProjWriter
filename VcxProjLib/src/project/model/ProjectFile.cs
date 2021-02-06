@@ -4,15 +4,18 @@ using CrosspathLib;
 
 namespace VcxProjLib {
     public class ProjectFile {
-        protected static DefineNameComparer DefineNameComparerInstance = new DefineNameComparer();
+        protected static DefineNameOnlyComparer defineNameOnlyComparerInstance = new DefineNameOnlyComparer();
 
         public AbsoluteCrosspath FilePath { get; }
+        public Compiler Compiler { get; }
         public HashSet<AbsoluteCrosspath> IncludeDirectories { get; }
         public HashSet<Define> Defines { get; }
 
-        public ProjectFile(AbsoluteCrosspath filePath) {
+        // generate compiledb with --full-path for this to work
+        public ProjectFile(AbsoluteCrosspath filePath, Compiler compiler) {
             IncludeDirectories = new HashSet<AbsoluteCrosspath>();
-            Defines = new HashSet<Define>(DefineNameComparerInstance);
+            Compiler = compiler;
+            Defines = new HashSet<Define>(defineNameOnlyComparerInstance);
             FilePath = filePath;
         }
 
@@ -65,7 +68,7 @@ namespace VcxProjLib {
             return hashIn;
         }
 
-        protected class DefineNameComparer : IEqualityComparer<Define> {
+        protected class DefineNameOnlyComparer : IEqualityComparer<Define> {
             public Boolean Equals(Define x, Define y) {
                 if (ReferenceEquals(x, y)) return true;
                 if (ReferenceEquals(x, null)) return false;

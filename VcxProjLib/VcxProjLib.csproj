@@ -31,29 +31,33 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Build" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Renci.SshNet, Version=2020.0.1.0, Culture=neutral, PublicKeyToken=1cee9f8bde3db106, processorArchitecture=MSIL">
+      <HintPath>..\packages\SSH.NET.2020.0.1\lib\net40\Renci.SshNet.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\config\Configuration.cs" />
     <Compile Include="src\Logger.cs" />
-    <Compile Include="src\SolutionStructure.cs" />
+    <Compile Include="src\project\SolutionStructure.cs" />
+    <Compile Include="src\remote\Compiler.cs" />
+    <Compile Include="src\remote\RemoteHost.cs" />
     <Compile Include="templates.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>templates.resx</DependentUpon>
     </Compile>
-    <Compile Include="src\CompileDBEntry.cs" />
-    <Compile Include="src\Define.cs" />
-    <Compile Include="src\IncludeDirectoryType.cs" />
-    <Compile Include="src\Project.cs" />
-    <Compile Include="src\ProjectFile.cs" />
-    <Compile Include="src\Solution.cs" />
+    <Compile Include="src\project\CompileDBEntry.cs" />
+    <Compile Include="src\project\Define.cs" />
+    <Compile Include="src\project\supporters\IncludeDirectoryType.cs" />
+    <Compile Include="src\project\model\Project.cs" />
+    <Compile Include="src\project\model\ProjectFile.cs" />
+    <Compile Include="src\project\model\Solution.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -76,5 +80,6 @@
       <Name>CrosspathLib</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

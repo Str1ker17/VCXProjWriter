@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 using Renci.SshNet;
 
-namespace VcxProjGUI {
+namespace VcxProjLib {
     [Serializable]
-    internal class RemoteHost {
+    public class RemoteHost {
         private String _username;
         private String _password;
         private String _host;
@@ -16,9 +17,8 @@ namespace VcxProjGUI {
         }
 
         public String Password {
-            set {
-                _password = value;
-            }
+            get { return _password; }
+            set { _password = value; }
         }
 
         public String Host {
@@ -32,7 +32,21 @@ namespace VcxProjGUI {
         }
 
         public static RemoteHost Parse(String str) {
-            return null;
+            // in format "user:pass@host:port". pass and port are optional
+            Regex r = new Regex("^([\\w-]+):?(.*)@([A-z\\d\\.-]+):?([\\d]*)$");
+            Match match = r.Match(str);
+            if (!match.Success) {
+                throw new ApplicationException("invalid format for remote");
+            }
+
+            RemoteHost remote = new RemoteHost {
+                    Username = match.Groups[1].Value
+                  , Password = match.Groups[2].Value
+                  , Host = match.Groups[3].Value
+                  , Port = UInt16.TryParse(match.Groups[4].Value, out UInt16 port) ? port : (UInt16) 22
+            };
+
+            return remote;
         }
 
         public override String ToString() {

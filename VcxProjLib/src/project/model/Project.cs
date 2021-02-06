@@ -12,9 +12,11 @@ namespace VcxProjLib {
         public String Filename {
             // ReSharper disable once ArrangeAccessorOwnerBody
             get {
-                return string.Format(SolutionStructure.ProjectFilePathFormat, Name);
+                return String.Format(SolutionStructure.ProjectFilePathFormat, Name);
             }
         }
+
+        public Compiler Compiler { get; }
 
         /// <summary>
         /// Not only extra include directories, but system too.
@@ -31,9 +33,10 @@ namespace VcxProjLib {
         public Dictionary<String, ProjectFile> ProjectFiles { get; }
 
 
-        public Project(Guid guid, String name, HashSet<AbsoluteCrosspath> includeDirectories, HashSet<Define> defines) {
+        public Project(Guid guid, String name, String compiler, HashSet<AbsoluteCrosspath> includeDirectories, HashSet<Define> defines) {
             Guid = guid;
             Name = name;
+            Compiler = new Compiler(compiler);
             // create copies, not references
             IncludeDirectories = new HashSet<AbsoluteCrosspath>(includeDirectories);
             Defines = new HashSet<Define>(defines, new DefineExactComparer());
@@ -51,7 +54,10 @@ namespace VcxProjLib {
         }
 
         public Boolean TestWhetherProjectFileBelongs(ProjectFile pf) {
-            return IncludeDirectories.SetEquals(pf.IncludeDirectories) && Defines.SetEquals(pf.Defines);
+            // TODO: allow relax if some defines are absent in one of sets
+            return ((Compiler.ExePath == pf.Compiler.ExePath) 
+                  && IncludeDirectories.SetEquals(pf.IncludeDirectories)
+                  && Defines.SetEquals(pf.Defines));
         }
 
         public void WriteToFile() {
@@ -122,11 +128,15 @@ namespace VcxProjLib {
 
             // compatibility files
             // TODO: add compatibility files directly to the project node
-            File.WriteAllText(
-                    string.Format(SolutionStructure.ForcedIncludes.LocalCompat, Path.GetDirectoryName(Filename)), @"");
-            File.WriteAllText(
-                    string.Format(SolutionStructure.ForcedIncludes.LocalPostCompat, Path.GetDirectoryName(Filename))
-                  , @"");
+            String compatPrefix = SolutionStructure.SeparateProjectsFromEachOther ? "" : $"{Name}.";
+            File.WriteAllText(String.Format(SolutionStructure.forcedIncludes.LocalCompat
+                                          , Path.GetDirectoryName(Filename)
+                                          , compatPrefix)
+                            , @"");
+            File.WriteAllText(String.Format(SolutionStructure.forcedIncludes.LocalPostCompat
+                                          , Path.GetDirectoryName(Filename)
+                                          , compatPrefix)
+                            , @"");
         }
 
         protected class DefineExactComparer : IEqualityComparer<Define> {

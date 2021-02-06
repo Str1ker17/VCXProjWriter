@@ -33,13 +33,13 @@ namespace CrosspathLib {
 
         public override String ToString() {
             // filter out .. and .
-            if (Directories.Count == 0) {
+            if (directories.Count == 0) {
                 return string.Empty;
             }
 
             // we need to inverse stack before output
             StringBuilder sb = new StringBuilder();
-            foreach (String dir in Directories) {
+            foreach (String dir in directories) {
                 sb.Append(dir);
                 switch (Flavor) {
                     case CrosspathFlavor.Windows:
@@ -59,7 +59,7 @@ namespace CrosspathLib {
 
         public override String ToAbsolutizedString() {
             if (WorkingDirectory is null) {
-                throw new CrosspathLibPolymorphismException(
+                throw new PolymorphismException(
                         "attempt to absolutize RelativePath without a WorkingDirectory");
             }
 

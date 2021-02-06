@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using CrosspathLib;
-using VcxProjLib;
 using Newtonsoft.Json;
 
-namespace VcxProjGUI {
+namespace VcxProjLib {
+    /// <summary>
+    /// This is NOT Visual Studio Solution/Project configuration.
+    /// This is configuration of project generation.
+    /// </summary>
     [Serializable]
-    internal class Configuration {
+    public class Configuration {
         private String _file;
         public String File {
             get { return _file; }
@@ -40,11 +43,15 @@ namespace VcxProjGUI {
         }
 
         public static Configuration LoadFromFile(String filename) {
-            return null;
+            return JsonConvert.DeserializeObject<Configuration>(System.IO.File.ReadAllText(filename));
         }
 
         public void SaveToFile(String filename) {
+            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(this, Formatting.Indented));
+        }
 
+        public void AssignRemote(RemoteHost remote) {
+            Remote = remote;
         }
     }
 }

@@ -42,6 +42,7 @@ namespace CrosspathUnitTests {
         }
 
         // I don't this this test is significant.
+        /*
         [TestMethod]
         public void WindowsMinifiedRootDrive() {
             Crosspath cpath = Crosspath.FromString(@"\");
@@ -49,6 +50,7 @@ namespace CrosspathUnitTests {
             Assert.AreEqual(CrosspathFlavor.Windows, cpath.Flavor);
             Assert.AreEqual(CrosspathOrigin.Absolute, cpath.Origin);
         }
+        */
 
         [TestMethod]
         public void EmptyPathParse() {
@@ -68,7 +70,7 @@ namespace CrosspathUnitTests {
                 cpath.ToAbsolutizedString();
                 Assert.Fail("should fail");
             }
-            catch (CrosspathLibPolymorphismException) {
+            catch (PolymorphismException) {
             }
         }
 

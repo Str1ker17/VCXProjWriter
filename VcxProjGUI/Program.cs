@@ -1,20 +1,27 @@
 ﻿using System;
 using System.Windows.Forms;
+using VcxProjLib;
 
 namespace VcxProjGUI {
     static class Program {
-        internal static FormMain MainForm = null;
+        internal static FormMain mainForm;
+        internal static Configuration config;
+        internal static PersistentConfiguration persistConfig;
 
         [STAThread]
         static void Main() {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            // load settings
+            config = Configuration.Default();
+            persistConfig = new PersistentConfiguration(); // FIXME
+
             // create forms
-            MainForm = new FormMain();
+            mainForm = new FormMain();
 
             // here we go
-            Application.Run(MainForm);
+            Application.Run(mainForm);
         }
     }
 }

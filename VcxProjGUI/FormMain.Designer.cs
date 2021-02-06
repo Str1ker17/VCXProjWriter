@@ -43,6 +43,9 @@ namespace VcxProjGUI
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.remoteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.manageRemotesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
+            this.debugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.doSomethingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MainMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -51,7 +54,8 @@ namespace VcxProjGUI
             this.MainMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.editToolStripMenuItem,
-            this.remoteToolStripMenuItem});
+            this.remoteToolStripMenuItem,
+            this.debugToolStripMenuItem});
             this.MainMenu.Location = new System.Drawing.Point(0, 0);
             this.MainMenu.Name = "MainMenu";
             this.MainMenu.Size = new System.Drawing.Size(854, 24);
@@ -134,7 +138,8 @@ namespace VcxProjGUI
             // remoteToolStripMenuItem
             // 
             this.remoteToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.manageRemotesToolStripMenuItem});
+            this.manageRemotesToolStripMenuItem,
+            this.toolStripMenuItem4});
             this.remoteToolStripMenuItem.Name = "remoteToolStripMenuItem";
             this.remoteToolStripMenuItem.Size = new System.Drawing.Size(60, 20);
             this.remoteToolStripMenuItem.Text = "Remote";
@@ -145,6 +150,26 @@ namespace VcxProjGUI
             this.manageRemotesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.manageRemotesToolStripMenuItem.Text = "Manage remotes...";
             this.manageRemotesToolStripMenuItem.Click += new System.EventHandler(this.manageRemotesToolStripMenuItem_Click);
+            // 
+            // toolStripMenuItem4
+            // 
+            this.toolStripMenuItem4.Name = "toolStripMenuItem4";
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(177, 6);
+            // 
+            // debugToolStripMenuItem
+            // 
+            this.debugToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.doSomethingToolStripMenuItem});
+            this.debugToolStripMenuItem.Name = "debugToolStripMenuItem";
+            this.debugToolStripMenuItem.Size = new System.Drawing.Size(54, 20);
+            this.debugToolStripMenuItem.Text = "Debug";
+            // 
+            // doSomethingToolStripMenuItem
+            // 
+            this.doSomethingToolStripMenuItem.Name = "doSomethingToolStripMenuItem";
+            this.doSomethingToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.doSomethingToolStripMenuItem.Text = "Do something";
+            this.doSomethingToolStripMenuItem.Click += new System.EventHandler(this.doSomethingToolStripMenuItem_Click);
             // 
             // FormMain
             // 
@@ -178,6 +203,9 @@ namespace VcxProjGUI
         private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem remoteToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem manageRemotesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem4;
+        private System.Windows.Forms.ToolStripMenuItem debugToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem doSomethingToolStripMenuItem;
     }
 }
 
