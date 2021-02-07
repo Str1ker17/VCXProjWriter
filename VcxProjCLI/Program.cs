@@ -68,7 +68,7 @@ namespace VcxProjCLI {
                         Console.WriteLine("        The compilation database file should conform to compiledb \"arguments\" format.");
                         Console.WriteLine("        More about it: https://github.com/nickdiego/compiledb");
                         Console.WriteLine("-r, --remote");
-                        Console.WriteLine("        Connect to remote system via SSH and collect information");
+                        Console.WriteLine("        PrepareForConnection to remote system via SSH and collect information");
                         Console.WriteLine("        from compiler for more precise project generation");
                         Console.WriteLine("--debug");
                         Console.WriteLine("        print lots of debugging information.");
@@ -99,7 +99,7 @@ namespace VcxProjCLI {
                     sln.RetrieveExtraInfoFromRemote(config.Remote);
                 }
                 sw.Stop();
-                Int64 parseAndGroup = sw.ElapsedMilliseconds;
+                Int64 remoteInfo = sw.ElapsedMilliseconds;
 
                 sw.Reset();
                 sw.Start();
@@ -128,7 +128,8 @@ namespace VcxProjCLI {
                 Int64 write = sw.ElapsedMilliseconds;
 
                 Console.WriteLine();
-                Console.WriteLine($"Elapsed time: parseAndGroup = {parseAndGroup} ms, rebase = {rebase} ms, write = {write} ms.");
+                Console.WriteLine($"Elapsed time: parseAndGroup = {parseAndGroup} ms, remoteInfo = {remoteInfo} ms" 
+                                + $", rebase = {rebase} ms, write = {write} ms.");
             }
             catch (Exception e) {
                 Console.WriteLine($"[x] {e.Message}");

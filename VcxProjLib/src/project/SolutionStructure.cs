@@ -29,7 +29,7 @@ namespace VcxProjLib {
         public struct ForcedIncludesStruct {
             public String LocalCompat => @"{0}\{1}local_compat.h";
             public String SolutionCompat => "solution_compat.h";
-            public String CompilerCompat => "compiler_compat.h";
+            public String CompilerCompat => "compiler_{0}_compat.h";
             public String SolutionPostCompat => "solution_post_compiler_compat.h";
             public String LocalPostCompat => @"{0}\{1}local_post_compiler_compat.h";
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text.RegularExpressions;
 using Renci.SshNet;
 
@@ -9,7 +10,9 @@ namespace VcxProjLib {
         private String _password;
         private String _host;
         private UInt16 _port;
-        private SshClient _clientConnection;
+        private ConnectionInfo _connectionInfo;
+        private SshClient _sshClientConnection;
+        private SftpClient _sftpClientConnection;
 
         public String Username {
             get { return _username; }
@@ -30,6 +33,8 @@ namespace VcxProjLib {
             get { return _port; }
             set { _port = value; }
         }
+
+        public static readonly int Success = 0;
 
         public static RemoteHost Parse(String str) {
             // in format "user:pass@host:port". pass and port are optional
@@ -53,21 +58,43 @@ namespace VcxProjLib {
             return $"{Username}@{Host}:{Port}";
         }
 
-        public void Connect() {
-            ConnectionInfo ci = new PasswordConnectionInfo(_host, _port, _username, _password);
-            _clientConnection = new SshClient(ci);
-            _clientConnection.Connect();
+        public void PrepareForConnection() {
+            _connectionInfo = new PasswordConnectionInfo(_host, _port, _username, _password);
+            _sshClientConnection = new SshClient(_connectionInfo);
+            _sshClientConnection.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            _sftpClientConnection = new SftpClient(_connectionInfo);
         }
 
         public int Execute(String cmd, out String result) {
-            if (!_clientConnection.IsConnected) {
-                Connect();
+            if (_connectionInfo == null) {
+                PrepareForConnection();
             }
 
-            SshCommand sshcmd = _clientConnection.CreateCommand(cmd);
-            sshcmd.CommandTimeout = TimeSpan.FromMinutes(1);
-            result = sshcmd.Execute();
-            return sshcmd.ExitStatus;
+            if (!_sshClientConnection.IsConnected) {
+                _sshClientConnection.Connect();
+            }
+
+            using (SshCommand sshcmd = _sshClientConnection.CreateCommand(cmd)) {
+                sshcmd.CommandTimeout = TimeSpan.FromSeconds(3);
+                result = sshcmd.Execute();
+                return sshcmd.ExitStatus;
+            }
+        }
+
+        public void DownloadFile(String filename) {
+            if (_connectionInfo == null) {
+                PrepareForConnection();
+            }
+
+            if (!_sshClientConnection.IsConnected) {
+                _sshClientConnection.Connect();
+            }
+
+            _sftpClientConnection.DownloadFile(filename, Stream.Null);
+        }
+
+        public void ExtractInfoFromCompiler(Compiler compiler) {
+            compiler.ExtractAdditionalInfo(this);
         }
     }
 }

@@ -44,7 +44,11 @@
   <ItemGroup>
     <Compile Include="src\config\Configuration.cs" />
     <Compile Include="src\Logger.cs" />
+    <Compile Include="src\project\IncludeDirectory.cs" />
     <Compile Include="src\project\SolutionStructure.cs" />
+    <Compile Include="src\project\supporters\DefineExactComparer.cs" />
+    <Compile Include="src\project\supporters\DefineNameOnlyComparer.cs" />
+    <Compile Include="src\project\supporters\PriorityQueue.cs" />
     <Compile Include="src\remote\Compiler.cs" />
     <Compile Include="src\remote\RemoteHost.cs" />
     <Compile Include="templates.Designer.cs">

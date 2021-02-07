@@ -33,10 +33,10 @@ namespace VcxProjLib {
         public Dictionary<String, ProjectFile> ProjectFiles { get; }
 
 
-        public Project(Guid guid, String name, String compiler, HashSet<AbsoluteCrosspath> includeDirectories, HashSet<Define> defines) {
+        public Project(Guid guid, String name, Compiler compiler, HashSet<AbsoluteCrosspath> includeDirectories, HashSet<Define> defines) {
             Guid = guid;
             Name = name;
-            Compiler = new Compiler(compiler);
+            Compiler = compiler;
             // create copies, not references
             IncludeDirectories = new HashSet<AbsoluteCrosspath>(includeDirectories);
             Defines = new HashSet<Define>(defines, new DefineExactComparer());
@@ -83,20 +83,26 @@ namespace VcxProjLib {
 
             // IDU settings
             XmlElement projectPropertyGroupIDU = doc.CreateElement("PropertyGroup");
+
             XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
+            // TODO: intermix project include directories with compiler include directories
             foreach (AbsoluteCrosspath includePath in IncludeDirectories) {
                 projectIncludePaths.InnerText += includePath + ";";
             }
-
             projectPropertyGroupIDU.AppendChild(projectIncludePaths);
+
             // maybe someday this will be helpful, but now it can be inherited from Solution.props
-            //XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
+            XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
+            // TODO: add compiler compat header to forced includes
+            projectForcedIncludes.InnerText += @"$(NMakeForcedIncludes)";
+            projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
+
             XmlElement projectDefines = doc.CreateElement("NMakePreprocessorDefinitions");
             foreach (Define define in Defines) {
                 projectDefines.InnerText += define + ";";
             }
-
             projectPropertyGroupIDU.AppendChild(projectDefines);
+
             projectNode.AppendChild(projectPropertyGroupIDU);
 
             // source file list
@@ -139,18 +145,5 @@ namespace VcxProjLib {
                             , @"");
         }
 
-        protected class DefineExactComparer : IEqualityComparer<Define> {
-            public Boolean Equals(Define x, Define y) {
-                if (ReferenceEquals(x, y)) return true;
-                if (ReferenceEquals(x, null)) return false;
-                if (ReferenceEquals(y, null)) return false;
-                if (x.GetType() != y.GetType()) return false;
-                return x.Name == y.Name && x.Value == y.Value;
-            }
-
-            public Int32 GetHashCode(Define obj) {
-                return obj.Name.GetHashCode();
-            }
-        }
     }
 }

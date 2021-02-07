@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VcxProjLib;
@@ -13,7 +14,7 @@ namespace VcxProjUnitTests {
         [TestMethod]
         public void ConnectRemoteHost() {
             RemoteHost remote = InitRemoteHost();
-            remote.Connect();
+            remote.PrepareForConnection();
             remote.Execute("echo -n 1", out String result);
             Assert.AreEqual("1", result);
         }
@@ -21,7 +22,7 @@ namespace VcxProjUnitTests {
         [TestMethod]
         public void PrintGCCPredefinedMacrosAtOnce() {
             RemoteHost remote = InitRemoteHost();
-            remote.Connect();
+            remote.PrepareForConnection();
             int rv = remote.Execute("gcc -E -dM - < /dev/null", out String result);
             Assert.AreEqual(0, rv);
         }
@@ -29,8 +30,16 @@ namespace VcxProjUnitTests {
         [TestMethod]
         public void PrintGCCIncludeDirectoriesAtOnce() {
             RemoteHost remote = InitRemoteHost();
-            remote.Connect();
+            remote.PrepareForConnection();
             int rv = remote.Execute("gcc -E -Wp,-v - < /dev/null", out String result);
+            Assert.AreEqual(0, rv);
+        }
+
+        [TestMethod]
+        public void PrintGCCIncludeDirectoriesv2AtOnce() {
+            RemoteHost remote = InitRemoteHost();
+            remote.PrepareForConnection();
+            int rv = remote.Execute("gcc -x c++ -c -Wp,-v - < /dev/null", out String result);
             Assert.AreEqual(0, rv);
         }
 
@@ -53,6 +62,49 @@ namespace VcxProjUnitTests {
             Assert.AreEqual(@"v3ry_str0ng-#\", remote3.Password);
             Assert.AreEqual("255.255.255.255", remote3.Host);
             Assert.AreEqual(65535, remote3.Port);
+        }
+
+        [TestMethod]
+        public void DefineParser() {
+            Define def1 = new Define("INCLUDE_L3");
+            Assert.AreEqual("INCLUDE_L3", def1.Name);
+            Assert.AreEqual(Define.DefaultValue, def1.Value);
+            Assert.AreEqual("INCLUDE_L3", def1.ToString());
+
+            Define def2 = new Define("INCLUDE_L3=1");
+            Assert.AreEqual("INCLUDE_L3", def2.Name);
+            Assert.AreEqual("1", def2.Value);
+            Assert.AreEqual("INCLUDE_L3=1", def2.ToString());
+
+            Define def3 = new Define("INCLUDE_L3=YES");
+            Assert.AreEqual("INCLUDE_L3", def3.Name);
+            Assert.AreEqual("YES", def3.Value);
+            Assert.AreEqual("INCLUDE_L3=YES", def3.ToString());
+
+            Define def4 = new Define("INCLUDE_L3=\"YES\"");
+            Assert.AreEqual("INCLUDE_L3", def4.Name);
+            Assert.AreEqual("YES", def4.Value);
+            Assert.AreEqual("INCLUDE_L3=YES", def4.ToString());
+        }
+
+        [TestMethod]
+        public void DefineComparer() {
+            Define def1 = new Define("INCLUDE_L3");
+            Define def2 = new Define("INCLUDE_L3=1");
+            HashSet<Define> hs1 = new HashSet<Define>(new DefineNameOnlyComparer());
+            HashSet<Define> hs2 = new HashSet<Define>(new DefineExactComparer());
+            hs1.Add(def1);
+            hs1.Add(def2);
+            hs2.Add(def1);
+            hs2.Add(def2);
+            Assert.AreEqual(1, hs1.Count);
+            Assert.AreEqual(2, hs2.Count);
+        }
+
+        [TestMethod]
+        public void IncludeDirsOrder() {
+            PriorityQueue<IncludeDirectory> includeDirs = new PriorityQueue<IncludeDirectory>();
+            Assert.Fail("TODO");
         }
     }
 }

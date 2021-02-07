@@ -17,7 +17,6 @@ namespace VcxProjGUI {
             remote.Password = "4040";
             remote.Host = "192.168.75.20";
             remote.Port = 22;
-            remote.Connect();
             remote.Execute("echo 1", out String result);
             MessageBox.Show(result);
         }

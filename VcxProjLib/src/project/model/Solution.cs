@@ -9,9 +9,12 @@ namespace VcxProjLib {
     public class Solution {
         protected Dictionary<Int64, Project> projects;
         protected HashSet<ProjectFile> solutionFiles;
-        protected List<Compiler> solutionCompilers;
+        protected HashSet<Compiler> solutionCompilers;
         // since we can construct the same absolute path from different combination of relative path
         // and working directory, the 'String' is reconstructed abspath, which is unique.
+        // TODO: use collection comparator instead to distinguish between same/different dirs
+        // remember that solutionIncludeDirectories is provided for convenience of rebasing
+        // but it does NOT need to be sorted and/or preserve order. go to Project for this
         protected Dictionary<String, AbsoluteCrosspath> solutionIncludeDirectories;
         protected Dictionary<IncludeDirectoryType, String> includeParam;
         protected HashSet<Guid> acquiredGuids;
@@ -20,7 +23,7 @@ namespace VcxProjLib {
         protected Solution() {
             projects = new Dictionary<Int64, Project>();
             solutionFiles = new HashSet<ProjectFile>();
-            solutionCompilers = new List<Compiler>();
+            solutionCompilers = new HashSet<Compiler>();
             solutionIncludeDirectories = new Dictionary<String, AbsoluteCrosspath>();
             includeParam = new Dictionary<IncludeDirectoryType, String> {
                     {IncludeDirectoryType.Generic, "-I"}
@@ -83,6 +86,23 @@ namespace VcxProjLib {
             foreach (CompileDBEntry entry in entries) {
                 // get compiler path
                 String compilerPath = entry.arguments[0];
+                Compiler compiler = null;
+                foreach (Compiler solutionCompiler in solutionCompilers) {
+                    if (solutionCompiler.ExePath == compilerPath) {
+                        // already registered
+                        compiler = solutionCompiler;
+                    }
+                }
+
+                if (compiler == null) {
+                    compiler = new Compiler(compilerPath);
+                    solutionCompilers.Add(compiler);
+                }
+
+                if (solutionCompilers.Add(compiler)) {
+                    Logger.WriteLine(LogLevel.Info, $"New compiler '{compilerPath}'");
+                }
+
                 // get full file path
                 AbsoluteCrosspath xpath;
                 Crosspath tmpXpath = Crosspath.FromString(entry.file);
@@ -94,8 +114,9 @@ namespace VcxProjLib {
                     xpath = tmpXpath as AbsoluteCrosspath;
                 }
 
-                ProjectFile pf = new ProjectFile(xpath, new Compiler(compilerPath));
+                ProjectFile pf = new ProjectFile(xpath, compiler);
                 Logger.WriteLine(LogLevel.Debug, $"===== file {xpath} =====");
+
                 // parse arguments to obtain all -I, -D, -U
                 // start from 1 to skip compiler name
                 for (Int32 i = 1; i < entry.arguments.Count; i++) {
@@ -206,7 +227,7 @@ namespace VcxProjLib {
                 //pf.DumpData();
                 Int64 projectHash = pf.HashProjectID();
                 if (!projects.ContainsKey(projectHash)) {
-                    projects.Add(projectHash, new Project(AllocateGuid(), $"Project{projectSerial++}", pf.IncludeDirectories, pf.Defines));
+                    projects.Add(projectHash, new Project(AllocateGuid(), $"Project{projectSerial++}", compiler, pf.IncludeDirectories, pf.Defines));
                 }
 
                 // add file to project
@@ -246,7 +267,9 @@ namespace VcxProjLib {
         }
 
         public void RetrieveExtraInfoFromRemote(RemoteHost remote) {
-            throw new NotImplementedException();
+            foreach (Compiler compiler in solutionCompilers) {
+                remote.ExtractInfoFromCompiler(compiler);
+            }
         }
 
         // TODO: these WriteLine calls break encapsulation
@@ -286,54 +309,65 @@ namespace VcxProjLib {
 
             // TODO: add them as "Solution Items"
             File.WriteAllText(SolutionStructure.forcedIncludes.SolutionCompat, @"#pragma once");
-            File.WriteAllText(SolutionStructure.forcedIncludes.CompilerCompat, @"#pragma once");
             File.WriteAllText(SolutionStructure.forcedIncludes.SolutionPostCompat, "#pragma once\n#undef _WIN32\n");
 //#undef _MSC_VER
 //#undef _MSC_FULL_VER
 //#undef _MSC_BUILD
 //#undef _MSC_EXTENSIONS
+            // generate one file per compiler and reference them from projects
+            int compilerSeq = 0;
+            foreach (Compiler solutionCompiler in solutionCompilers) {
+                using (StreamWriter sw = new StreamWriter(String.Format(SolutionStructure.forcedIncludes.CompilerCompat, compilerSeq), false, Encoding.UTF8)) {
+                    sw.WriteLine(@"#pragma once");
+                    foreach (Define compilerInternalDefine in solutionCompiler.Defines) {
+                        sw.WriteLine($"#define {compilerInternalDefine.Name} {compilerInternalDefine.Value}");
+                    }
+                }
+                ++compilerSeq;
+            }
 
             File.WriteAllBytes(SolutionStructure.SolutionPropsFilename, templates.SolutionProps);
 
             // write .sln itself
             // using simple text generator
-            StreamWriter sw = new StreamWriter(SolutionStructure.SolutionFilename, false, Encoding.UTF8);
-            sw.WriteLine(@"");
-            sw.WriteLine(@"Microsoft Visual Studio Solution File, Format Version 12.00");
-            sw.WriteLine(@"# Visual Studio Version 16");
-            sw.WriteLine(@"VisualStudioVersion = 16.0.30804.86");
-            sw.WriteLine(@"MinimumVisualStudioVersion = 10.0.40219.1");
-            foreach (var project in projects.Values) {
-                sw.WriteLine($@"Project(""{{{AllocateGuid()}}}"") = ""{project.Name}"", ""{project.Filename}"", ""{project.Guid}""");
-                sw.WriteLine("EndProject");
-            }
+            using (StreamWriter sw = new StreamWriter(SolutionStructure.SolutionFilename, false, Encoding.UTF8)) {
+                sw.WriteLine(@"");
+                sw.WriteLine(@"Microsoft Visual Studio Solution File, Format Version 12.00");
+                sw.WriteLine(@"# Visual Studio Version 16");
+                sw.WriteLine(@"VisualStudioVersion = 16.0.30804.86");
+                sw.WriteLine(@"MinimumVisualStudioVersion = 10.0.40219.1");
+                foreach (var project in projects.Values) {
+                    sw.WriteLine($@"Project(""{{{AllocateGuid()}}}"") = ""{project.Name}"", ""{project.Filename}"", ""{project.Guid}""");
+                    sw.WriteLine("EndProject");
+                }
 
-            sw.WriteLine(@"Global");
-            sw.WriteLine('\t' + @"GlobalSection(SolutionConfigurationPlatforms) = preSolution");
-            foreach (var cfg in SolutionStructure.SolutionConfigurations) {
-                sw.WriteLine($"\t\t{cfg} = {cfg}");
-            }
+                sw.WriteLine(@"Global");
+                sw.WriteLine('\t' + @"GlobalSection(SolutionConfigurationPlatforms) = preSolution");
+                foreach (var cfg in SolutionStructure.SolutionConfigurations) {
+                    sw.WriteLine($"\t\t{cfg} = {cfg}");
+                }
 
-            sw.WriteLine(@"EndGlobalSection");
-            sw.WriteLine('\t' + @"GlobalSection(ProjectConfigurationPlatforms) = postSolution");
-            String[] cfgStages = {"ActiveCfg", "Build.0", "Deploy.0"};
-            foreach (var project in projects.Values) {
-                foreach (String cfg in SolutionStructure.SolutionConfigurations) {
-                    foreach (String cfgStage in cfgStages) {
-                        sw.WriteLine($"\t\t{{{project.Guid}}}.{cfg}.{cfgStage} = {cfg}");
+                sw.WriteLine(@"EndGlobalSection");
+                sw.WriteLine('\t' + @"GlobalSection(ProjectConfigurationPlatforms) = postSolution");
+                String[] cfgStages = {"ActiveCfg", "Build.0", "Deploy.0"};
+                foreach (var project in projects.Values) {
+                    foreach (String cfg in SolutionStructure.SolutionConfigurations) {
+                        foreach (String cfgStage in cfgStages) {
+                            sw.WriteLine($"\t\t{{{project.Guid}}}.{cfg}.{cfgStage} = {cfg}");
+                        }
                     }
                 }
-            }
 
-            sw.WriteLine("\tEndGlobalSection");
-            sw.WriteLine("\tGlobalSection(SolutionProperties) = preSolution");
-            sw.WriteLine("\t\tHideSolutionNode = FALSE");
-            sw.WriteLine("\tEndGlobalSection");
-            sw.WriteLine("\tGlobalSection(ExtensibilityGlobals) = postSolution");
-            sw.WriteLine($"\t\tSolutionGuid = {{{selfGuid}}}");
-            sw.WriteLine("\tEndGlobalSection");
-            sw.WriteLine("EndGlobal");
-            sw.Close();
+                sw.WriteLine("\tEndGlobalSection");
+                sw.WriteLine("\tGlobalSection(SolutionProperties) = preSolution");
+                sw.WriteLine("\t\tHideSolutionNode = FALSE");
+                sw.WriteLine("\tEndGlobalSection");
+                sw.WriteLine("\tGlobalSection(ExtensibilityGlobals) = postSolution");
+                sw.WriteLine($"\t\tSolutionGuid = {{{selfGuid}}}");
+                sw.WriteLine("\tEndGlobalSection");
+                sw.WriteLine("EndGlobal");
+                sw.Close();
+            }
 
             Directory.SetCurrentDirectory(pwd);
         }
