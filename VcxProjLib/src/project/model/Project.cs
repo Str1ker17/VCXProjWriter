@@ -61,6 +61,24 @@ namespace VcxProjLib {
         }
 
         public void WriteToFile() {
+            String inheritFrom;
+            if (Compiler.HaveAdditionalInfo) {
+                inheritFrom = $@"$(SolutionDir)\{Compiler.PropsFileName}";
+            }
+            else {
+                inheritFrom = @"$(SolutionDir)\Solution.props";
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(this.Filename) ?? Directory.GetCurrentDirectory());
+
+            // compatibility files
+            // DONE: add compatibility files directly to the project node
+            String compatPrefix = SolutionStructure.SeparateProjectsFromEachOther ? "" : $"{Name}.";
+            String compatLocal = String.Format(SolutionStructure.ForcedIncludes.LocalCompat, compatPrefix);
+            String compatLocalPost = String.Format(SolutionStructure.ForcedIncludes.LocalPostCompat, compatPrefix);
+            File.WriteAllText($@"{Path.GetDirectoryName(Filename)}\{compatLocal}", @"");
+            File.WriteAllText($@"{Path.GetDirectoryName(Filename)}\{compatLocalPost}", @"");
+
             // create with XML API
             XmlDocument doc = new XmlDocument();
             doc.AppendChild(doc.CreateXmlDeclaration("1.0", "utf-8", null));
@@ -71,7 +89,7 @@ namespace VcxProjLib {
             projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
 
             XmlElement projectImportProps = doc.CreateElement("Import");
-            projectImportProps.SetAttribute("Project", @"$(SolutionDir)\Solution.props");
+            projectImportProps.SetAttribute("Project", inheritFrom);
             projectNode.AppendChild(projectImportProps);
 
             XmlElement projectPropertyGroupGlobals = doc.CreateElement("PropertyGroup");
@@ -89,12 +107,13 @@ namespace VcxProjLib {
             foreach (AbsoluteCrosspath includePath in IncludeDirectories) {
                 projectIncludePaths.InnerText += includePath + ";";
             }
+            projectIncludePaths.InnerText += "$(NMakeIncludeSearchPath)";
             projectPropertyGroupIDU.AppendChild(projectIncludePaths);
 
             // maybe someday this will be helpful, but now it can be inherited from Solution.props
             XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             // TODO: add compiler compat header to forced includes
-            projectForcedIncludes.InnerText += @"$(NMakeForcedIncludes)";
+            projectForcedIncludes.InnerText = $@"{compatLocal};$(NMakeForcedIncludes);{compatLocalPost}";
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
 
             XmlElement projectDefines = doc.CreateElement("NMakePreprocessorDefinitions");
@@ -129,21 +148,7 @@ namespace VcxProjLib {
             projectNode.AppendChild(projectItemGroupIncludes);
 
             doc.AppendChild(projectNode);
-            Directory.CreateDirectory(Path.GetDirectoryName(this.Filename) ?? Directory.GetCurrentDirectory());
             doc.Save(this.Filename);
-
-            // compatibility files
-            // TODO: add compatibility files directly to the project node
-            String compatPrefix = SolutionStructure.SeparateProjectsFromEachOther ? "" : $"{Name}.";
-            File.WriteAllText(String.Format(SolutionStructure.forcedIncludes.LocalCompat
-                                          , Path.GetDirectoryName(Filename)
-                                          , compatPrefix)
-                            , @"");
-            File.WriteAllText(String.Format(SolutionStructure.forcedIncludes.LocalPostCompat
-                                          , Path.GetDirectoryName(Filename)
-                                          , compatPrefix)
-                            , @"");
         }
-
     }
 }

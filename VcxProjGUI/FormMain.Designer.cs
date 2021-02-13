@@ -147,14 +147,14 @@ namespace VcxProjGUI
             // manageRemotesToolStripMenuItem
             // 
             this.manageRemotesToolStripMenuItem.Name = "manageRemotesToolStripMenuItem";
-            this.manageRemotesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.manageRemotesToolStripMenuItem.Size = new System.Drawing.Size(172, 22);
             this.manageRemotesToolStripMenuItem.Text = "Manage remotes...";
             this.manageRemotesToolStripMenuItem.Click += new System.EventHandler(this.manageRemotesToolStripMenuItem_Click);
             // 
             // toolStripMenuItem4
             // 
             this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-            this.toolStripMenuItem4.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(169, 6);
             // 
             // debugToolStripMenuItem
             // 
@@ -167,7 +167,7 @@ namespace VcxProjGUI
             // doSomethingToolStripMenuItem
             // 
             this.doSomethingToolStripMenuItem.Name = "doSomethingToolStripMenuItem";
-            this.doSomethingToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.doSomethingToolStripMenuItem.Size = new System.Drawing.Size(149, 22);
             this.doSomethingToolStripMenuItem.Text = "Do something";
             this.doSomethingToolStripMenuItem.Click += new System.EventHandler(this.doSomethingToolStripMenuItem_Click);
             // 

@@ -10,12 +10,12 @@ namespace VcxProjLib {
     /// </summary>
     [Serializable]
     public class Configuration {
-        private String _file;
-        public String File {
-            get { return _file; }
+        private String _inputFile;
+        public String InputFile {
+            get { return _inputFile; }
             set {
                 // TODO: be more restrictive
-                _file = value;
+                _inputFile = value;
             }
         }
 
@@ -37,7 +37,7 @@ namespace VcxProjLib {
 
         public static Configuration Default() {
             return new Configuration {
-                    File = "compile_commands.json"
+                    InputFile = "compile_commands.json"
                   , Outdir = "output"
             };
         }

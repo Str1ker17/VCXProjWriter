@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
+using System.Xml;
 using CrosspathLib;
 
 namespace VcxProjLib {
@@ -9,19 +13,24 @@ namespace VcxProjLib {
     /// </summary>
     public class Compiler {
         public String ExePath { get; }
+        public String ShortName { get; }
         public String Version { get; protected set; }
+        public String PropsFileName { get { return String.Format(SolutionStructure.CompilerPropsFileFormat, ShortName); } }
+        public Boolean HaveAdditionalInfo { get; protected set; }
+        public String CompilerCompatHeaderPath { get { return String.Format(SolutionStructure.ForcedIncludes.CompilerCompat, ShortName); } }
         /// <summary>
         /// Since we are parsing output which is order-dependent, we have to preserve inserting order.
         /// Assuming that remote compiler removes duplicates on its own
         /// </summary>
-        public List<IncludeDirectory> IncludeDirectories { get; }
-        public SortedSet<Define> Defines { get; }
+        protected List<IncludeDirectory> IncludeDirectories { get; }
+        protected SortedSet<Define> Defines { get; }
 
         protected static readonly String[] LineEndings = {"\r\n", "\n", "\r"};
         protected static readonly Char[] LineEndingsChar = {'\n', '\r'};
 
         public Compiler(String path) {
             ExePath = path;
+            ShortName = Crosspath.FromString(path).LastEntry;
             IncludeDirectories = new List<IncludeDirectory>();
             Defines = new SortedSet<Define>(); // TODO: add comparer
         }
@@ -59,7 +68,7 @@ namespace VcxProjLib {
 
             AbsoluteCrosspath xpwd = Crosspath.FromString(pwd.TrimEnd(LineEndingsChar)) as AbsoluteCrosspath;
             if (Crosspath.FromString(absExePath.TrimEnd(LineEndingsChar)) is AbsoluteCrosspath xCompilerPath && xCompilerPath.ToString() != ExePath) {
-                Logger.WriteLine(LogLevel.Info, $"compiler '{ExePath}' actually located at '{xCompilerPath.ToString()}'");
+                Logger.WriteLine(LogLevel.Info, $"compiler '{ExePath}' actually located at '{xCompilerPath}'");
             }
             Version = version.TrimEnd(LineEndingsChar);
 
@@ -133,10 +142,105 @@ End of search list.
                     break;
                 }
             }
+
+            HaveAdditionalInfo = true;
         }
 
         public void DownloadAdditionalInfo(RemoteHost remote) {
             // use sftp, or, when not possible, ssh cat
+            int xtractBufSize = 32768;
+            Byte[] zipExtractBuf = new Byte[xtractBufSize];
+            foreach (IncludeDirectory includeDirectory in IncludeDirectories) {
+                if (includeDirectory.Flavor == CrosspathFlavor.Windows) {
+                    continue;
+                }
+                String remoteFilename = $"/tmp/{includeDirectory.ShortName}.zip";
+                String localFilename = $"{includeDirectory.ShortName}.zip";
+                String localDirectory = $@"compilers\{ShortName}\include\{includeDirectory.ShortName}";
+                String localDirectoryFull = Path.GetFullPath(localDirectory);
+                if (remote.Execute($"pushd {includeDirectory} && zip -9 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
+                    Logger.WriteLine(LogLevel.Error, result);
+                }
+                remote.DownloadFile(remoteFilename, localFilename);
+                Directory.CreateDirectory(localDirectory);
+                //ZipFile.ExtractToDirectory(localFilename, localDirectory, Encoding.UTF8);
+                using (FileStream fs = new FileStream(localFilename, FileMode.Open)) {
+                    ZipArchive za = new ZipArchive(fs, ZipArchiveMode.Read);
+                    foreach (ZipArchiveEntry zaEntry in za.Entries) {
+                        if (File.Exists(zaEntry.FullName)) {
+                            Logger.WriteLine(LogLevel.Warning, $"file '{zaEntry.FullName}' already exists - case problems?");
+                            continue;
+                        }
+
+                        Directory.CreateDirectory(Crosspath.FromString(zaEntry.FullName).ToContainingDirectory().ToString());
+                        using (FileStream xfs = new FileStream(zaEntry.FullName, FileMode.CreateNew)) {
+                            using (Stream zas = zaEntry.Open()) {
+                                while (true) {
+                                    int len = zas.Read(zipExtractBuf, 0, xtractBufSize);
+                                    if (len == 0) {
+                                        // EOF
+                                        break;
+                                    }
+                                    xfs.Write(zipExtractBuf, 0, len);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // if extraction went ok, we can remove remote file
+                remote.Execute($"rm {remoteFilename}", out String nonvaluable);
+
+                // since we definitely have a local copy of include directory, rebase on it
+                includeDirectory.Rebase(includeDirectory, AbsoluteCrosspath.FromString(localDirectoryFull));
+            }
+        }
+
+        /// <summary>
+        /// Writes compiler_${ShortName}.props and compiler_$(ShortName}_compat.h
+        /// </summary>
+        public void WriteToFile() {
+            Directory.CreateDirectory(Path.GetDirectoryName(CompilerCompatHeaderPath));
+            using (StreamWriter sw = new StreamWriter(CompilerCompatHeaderPath, false, Encoding.UTF8)) {
+                sw.WriteLine(@"#pragma once");
+                foreach (Define compilerInternalDefine in Defines) {
+                    sw.WriteLine($"#define {compilerInternalDefine.Name} {compilerInternalDefine.Value}");
+                }
+            }
+
+            XmlDocument doc = new XmlDocument();
+            doc.AppendChild(doc.CreateXmlDeclaration("1.0", "utf-8", null));
+
+            XmlElement projectNode = doc.CreateElement("Project");
+            projectNode.SetAttribute("DefaultTargets", "Build");
+            projectNode.SetAttribute("ToolsVersion", "15.0");
+            projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
+
+            XmlElement projectImportProps = doc.CreateElement("Import");
+            projectImportProps.SetAttribute("Project", @"$(SolutionDir)\Solution.props");
+            projectNode.AppendChild(projectImportProps);
+
+            // IDU settings
+            XmlElement projectPropertyGroupIDU = doc.CreateElement("PropertyGroup");
+
+            XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
+            // DONE: intermix project include directories with compiler include directories
+            foreach (IncludeDirectory includePath in IncludeDirectories) {
+                projectIncludePaths.InnerText += includePath + ";";
+            }
+            projectIncludePaths.InnerText += "$(CompilerIncludeDirAfter);$(NMakeIncludeSearchPath)";
+            projectPropertyGroupIDU.AppendChild(projectIncludePaths);
+
+            // maybe someday this will be helpful, but now it can be inherited from Solution.props
+            XmlElement projectForcedIncludes = doc.CreateElement("SolutionCompilerCompat");
+            // DONE: add compiler compat header to forced includes
+            projectForcedIncludes.InnerText = $@"$(SolutionDir)\{CompilerCompatHeaderPath}";
+            projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
+
+            projectNode.AppendChild(projectPropertyGroupIDU);
+
+            doc.AppendChild(projectNode);
+            doc.Save(PropsFileName);
         }
 
         public override Int32 GetHashCode() {

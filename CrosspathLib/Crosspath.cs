@@ -17,6 +17,7 @@ namespace CrosspathLib {
         public CrosspathOrigin Origin { get; private set; }
         public CrosspathFlavor Flavor { get; protected set; }
         public Char WindowsRootDrive { get; protected set; }
+        public String LastEntry { get { return directories.Last.Value; } }
 
         protected LinkedList<String> directories;
 
@@ -140,8 +141,8 @@ namespace CrosspathLib {
             if (dir == "..") {
                 if (this is AbsoluteCrosspath) {
                     directories.RemoveLast();
-                    return;
                 }
+                return;
             }
 
             directories.AddLast(dir);
@@ -154,6 +155,19 @@ namespace CrosspathLib {
 
             foreach (String dir in part.directories) {
                 Chdir(dir);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Removes last entry if exists and returns self.
+        /// This is useful to get containing directory.
+        /// </summary>
+        /// <returns>Modified self object</returns>
+        public Crosspath ToContainingDirectory() {
+            if (directories.Count > 1) {
+                directories.RemoveLast();
             }
 
             return this;

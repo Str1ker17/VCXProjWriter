@@ -77,20 +77,23 @@ namespace VcxProjLib {
             using (SshCommand sshcmd = _sshClientConnection.CreateCommand(cmd)) {
                 sshcmd.CommandTimeout = TimeSpan.FromSeconds(3);
                 result = sshcmd.Execute();
+                Logger.WriteLine(LogLevel.Debug, $"run {cmd} on {this}, exit code = {sshcmd.ExitStatus}");
                 return sshcmd.ExitStatus;
             }
         }
 
-        public void DownloadFile(String filename) {
+        public void DownloadFile(String remoteFilename, String localFilename) {
             if (_connectionInfo == null) {
                 PrepareForConnection();
             }
 
-            if (!_sshClientConnection.IsConnected) {
-                _sshClientConnection.Connect();
+            if (!_sftpClientConnection.IsConnected) {
+                _sftpClientConnection.Connect();
             }
 
-            _sftpClientConnection.DownloadFile(filename, Stream.Null);
+            using (FileStream fs = new FileStream(localFilename, FileMode.Create)) {
+                _sftpClientConnection.DownloadFile(remoteFilename, fs);
+            }
         }
 
         public void ExtractInfoFromCompiler(Compiler compiler) {

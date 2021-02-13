@@ -2,6 +2,7 @@
 
 <!-- This file contains a template (default settings) for projects generated with VCXProjWriter. -->
 <!-- https://github.com/Str1ker17/VCXProjWriter -->
+<!--EXTERNAL_PROPERTIES: VCTargetsPath;Configuration;Platform-->
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -35,7 +36,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <NMakeIncludeSearchPath>$(ProjectDir)\include</NMakeIncludeSearchPath>
-    <NMakeForcedIncludes>local_compat.h;$(SolutionDir)\solution_compat.h;$(SolutionDir)\compiler_compat.h;$(SolutionDir)\solution_post_compiler_compat.h;local_post_compiler_compat.h</NMakeForcedIncludes>
+    <NMakeForcedIncludes>$(SolutionDir)\solution_compat.h;$(SolutionCompilerCompat);$(SolutionDir)\solution_post_compiler_compat.h</NMakeForcedIncludes>
     <NMakePreprocessorDefinitions>VCXPROJWRITER</NMakePreprocessorDefinitions>
     <AdditionalOptions>/UVCXPROJWRITER</AdditionalOptions>
     <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>

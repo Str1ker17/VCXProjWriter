@@ -115,7 +115,7 @@ namespace VcxProjLib {
                 }
 
                 ProjectFile pf = new ProjectFile(xpath, compiler);
-                Logger.WriteLine(LogLevel.Debug, $"===== file {xpath} =====");
+                Logger.WriteLine(LogLevel.Trace, $"===== file {xpath} =====");
 
                 // parse arguments to obtain all -I, -D, -U
                 // start from 1 to skip compiler name
@@ -194,7 +194,7 @@ namespace VcxProjLib {
                         }
 
                         pf.Define(defineString);
-                        //Console.WriteLine("[i] Added -D{0}", defineString);
+                        Logger.WriteLine(LogLevel.Trace, $"[i] Added -D{defineString}");
                         continue;
                     }
 
@@ -227,7 +227,8 @@ namespace VcxProjLib {
                 //pf.DumpData();
                 Int64 projectHash = pf.HashProjectID();
                 if (!projects.ContainsKey(projectHash)) {
-                    projects.Add(projectHash, new Project(AllocateGuid(), $"Project{projectSerial++}", compiler, pf.IncludeDirectories, pf.Defines));
+                    projects.Add(projectHash, new Project(AllocateGuid(), $"Project_{projectSerial:D4}", compiler, pf.IncludeDirectories, pf.Defines));
+                    ++projectSerial;
                 }
 
                 // add file to project
@@ -242,15 +243,13 @@ namespace VcxProjLib {
                 }
             }
 
-            Console.WriteLine("[i] Created a solution of {0} projects from {1} files", projects.Count,
-                    solutionFiles.Count);
-            Console.WriteLine();
+            Logger.WriteLine(LogLevel.Info, $"[i] Created a solution of {projects.Count} projects from {solutionFiles.Count} files");
 
             if (Logger.Level == LogLevel.Trace) {
                 foreach (var projectKvp in projects) {
-                    Console.WriteLine("# Project ID {0}", projectKvp.Key);
+                    Logger.WriteLine(LogLevel.Trace, $"# Project ID {projectKvp.Key}");
                     foreach (var file in projectKvp.Value.ProjectFiles) {
-                        Console.WriteLine("# > {0}", file.Value.FilePath);
+                        Logger.WriteLine(LogLevel.Trace, $"# > {file.Value.FilePath}");
                     }
 
                     using (var enumerator = projectKvp.Value.ProjectFiles.GetEnumerator()) {
@@ -258,7 +257,7 @@ namespace VcxProjLib {
                         enumerator.Current.Value.DumpData();
                     }
 
-                    Console.WriteLine("============================================");
+                    Logger.WriteLine(LogLevel.Trace, "============================================");
                 }
             }
 
@@ -268,8 +267,18 @@ namespace VcxProjLib {
 
         public void RetrieveExtraInfoFromRemote(RemoteHost remote) {
             foreach (Compiler compiler in solutionCompilers) {
-                remote.ExtractInfoFromCompiler(compiler);
+                compiler.ExtractAdditionalInfo(remote);
             }
+        }
+
+        public void DownloadExtraInfoFromRemote(RemoteHost remote, String dir) {
+            String pwd = Directory.GetCurrentDirectory();
+            Directory.CreateDirectory(dir);
+            Directory.SetCurrentDirectory(dir);
+            foreach (Compiler compiler in solutionCompilers) {
+                compiler.DownloadAdditionalInfo(remote);
+            }
+            Directory.SetCurrentDirectory(pwd);
         }
 
         // TODO: these WriteLine calls break encapsulation
@@ -302,29 +311,25 @@ namespace VcxProjLib {
             String pwd = Directory.GetCurrentDirectory();
             Directory.SetCurrentDirectory(directory);
 
-            foreach (var projectKvp in projects) {
+            foreach (Compiler compiler in solutionCompilers) {
+                compiler.WriteToFile();
+            }
+
+            foreach (Project projectKvp in projects.Values) {
                 // remember there will also be .vcxproj.filters
-                projectKvp.Value.WriteToFile();
+                projectKvp.WriteToFile();
             }
 
             // TODO: add them as "Solution Items"
-            File.WriteAllText(SolutionStructure.forcedIncludes.SolutionCompat, @"#pragma once");
-            File.WriteAllText(SolutionStructure.forcedIncludes.SolutionPostCompat, "#pragma once\n#undef _WIN32\n");
+            File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionCompat, @"#pragma once");
+            File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionPostCompat, "#pragma once\n#undef _WIN32\n");
 //#undef _MSC_VER
 //#undef _MSC_FULL_VER
 //#undef _MSC_BUILD
 //#undef _MSC_EXTENSIONS
+            // regarding compiler_compat.h:
             // generate one file per compiler and reference them from projects
-            int compilerSeq = 0;
-            foreach (Compiler solutionCompiler in solutionCompilers) {
-                using (StreamWriter sw = new StreamWriter(String.Format(SolutionStructure.forcedIncludes.CompilerCompat, compilerSeq), false, Encoding.UTF8)) {
-                    sw.WriteLine(@"#pragma once");
-                    foreach (Define compilerInternalDefine in solutionCompiler.Defines) {
-                        sw.WriteLine($"#define {compilerInternalDefine.Name} {compilerInternalDefine.Value}");
-                    }
-                }
-                ++compilerSeq;
-            }
+            // see Compiler.WriteToFile() instead
 
             File.WriteAllBytes(SolutionStructure.SolutionPropsFilename, templates.SolutionProps);
 
@@ -336,21 +341,21 @@ namespace VcxProjLib {
                 sw.WriteLine(@"# Visual Studio Version 16");
                 sw.WriteLine(@"VisualStudioVersion = 16.0.30804.86");
                 sw.WriteLine(@"MinimumVisualStudioVersion = 10.0.40219.1");
-                foreach (var project in projects.Values) {
+                foreach (Project project in projects.Values) {
                     sw.WriteLine($@"Project(""{{{AllocateGuid()}}}"") = ""{project.Name}"", ""{project.Filename}"", ""{project.Guid}""");
                     sw.WriteLine("EndProject");
                 }
 
                 sw.WriteLine(@"Global");
                 sw.WriteLine('\t' + @"GlobalSection(SolutionConfigurationPlatforms) = preSolution");
-                foreach (var cfg in SolutionStructure.SolutionConfigurations) {
+                foreach (String cfg in SolutionStructure.SolutionConfigurations) {
                     sw.WriteLine($"\t\t{cfg} = {cfg}");
                 }
 
                 sw.WriteLine(@"EndGlobalSection");
                 sw.WriteLine('\t' + @"GlobalSection(ProjectConfigurationPlatforms) = postSolution");
                 String[] cfgStages = {"ActiveCfg", "Build.0", "Deploy.0"};
-                foreach (var project in projects.Values) {
+                foreach (Project project in projects.Values) {
                     foreach (String cfg in SolutionStructure.SolutionConfigurations) {
                         foreach (String cfgStage in cfgStages) {
                             sw.WriteLine($"\t\t{{{project.Guid}}}.{cfg}.{cfgStage} = {cfg}");

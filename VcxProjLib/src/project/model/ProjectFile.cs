@@ -26,7 +26,7 @@ namespace VcxProjLib {
         public Boolean Define(String defineString) {
             Define newDefine = new Define(defineString);
             if (Defines.Contains(newDefine)) {
-                Console.WriteLine("[!] warning: '{0}' redefined to '{1}'", newDefine.Name, newDefine.Value);
+                Logger.WriteLine(LogLevel.Warning, $"'{newDefine.Name}' redefined to '{newDefine.Value}'");
                 Defines.Remove(newDefine);
             }
 

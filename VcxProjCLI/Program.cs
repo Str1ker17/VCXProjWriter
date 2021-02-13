@@ -38,7 +38,7 @@ namespace VcxProjCLI {
 
                     case "-f":
                     case "--file":
-                        config.File = args[idx + 1];
+                        config.InputFile = args[idx + 1];
                         ++idx;
                         break;
 
@@ -64,7 +64,7 @@ namespace VcxProjCLI {
                         Console.WriteLine("-o, --output-dir DIR");
                         Console.WriteLine($"        put solution to DIR directory. Default is '{config.Outdir}'.");
                         Console.WriteLine("-f, --file FILE");
-                        Console.WriteLine($"        read compilation database from FILE. Default is '{config.File}'");
+                        Console.WriteLine($"        read compilation database from FILE. Default is '{config.InputFile}'");
                         Console.WriteLine("        The compilation database file should conform to compiledb \"arguments\" format.");
                         Console.WriteLine("        More about it: https://github.com/nickdiego/compiledb");
                         Console.WriteLine("-r, --remote");
@@ -89,7 +89,7 @@ namespace VcxProjCLI {
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                Solution sln = Solution.CreateSolutionFromCompileDB(config.File);
+                Solution sln = Solution.CreateSolutionFromCompileDB(config.InputFile);
                 sw.Stop();
                 Int64 parseAndGroup = sw.ElapsedMilliseconds;
 
@@ -119,6 +119,10 @@ namespace VcxProjCLI {
                 }
                 catch {
                     // ignored
+                }
+
+                if (config.Remote != null) {
+                    sln.DownloadExtraInfoFromRemote(config.Remote, config.Outdir);
                 }
 
                 sw.Reset();

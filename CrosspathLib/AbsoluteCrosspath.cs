@@ -22,6 +22,20 @@ namespace CrosspathLib {
         }
 
         /// <summary>
+        /// Creates AbsoluteCrosspath from string.
+        /// If string does not contain an absolute path, then throw an exception.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public new static AbsoluteCrosspath FromString(String path) {
+            Crosspath xpath = Crosspath.FromString(path);
+            if (!(xpath is AbsoluteCrosspath)) {
+                throw new CrosspathLibException("the path provided is not absolute");
+            }
+            return xpath as AbsoluteCrosspath;
+        }
+
+        /// <summary>
         /// Returns full (absolute) path as a string.
         /// </summary>
         /// <returns></returns>
@@ -69,7 +83,7 @@ namespace CrosspathLib {
         }
 
         /// <summary>
-        /// Replaces the beginning of path.
+        /// Replaces the beginning of path. Modifies original object and returns it.
         /// </summary>
         /// <param name="oldBase"></param>
         /// <param name="newBase"></param>

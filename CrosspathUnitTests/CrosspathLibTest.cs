@@ -175,5 +175,13 @@ namespace CrosspathUnitTests {
             Assert.AreEqual(@"D:\Workspace\Source\qemu", apath.ToString());
             Assert.AreEqual(@"D:\Workspace\Source\qemu", apath.ToAbsolutizedString());
         }
+
+        [TestMethod]
+        public void GetContainingDirectory() {
+            String filename = "lzcintrin.h";
+            Crosspath xpath = Crosspath.FromString(filename);
+            xpath.ToContainingDirectory();
+            Assert.AreEqual("", xpath.ToString());
+        }
     }
 }
