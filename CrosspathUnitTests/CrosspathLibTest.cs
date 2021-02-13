@@ -95,7 +95,7 @@ namespace CrosspathUnitTests {
             Assert.IsInstanceOfType(cpath, typeof(RelativeCrosspath));
             Assert.AreEqual(CrosspathFlavor.Unix, cpath.Flavor);
             Assert.AreEqual(CrosspathOrigin.Relative, cpath.Origin);
-            Assert.AreEqual(@"qemu/src/../inc", (cpath as RelativeCrosspath).ToString());
+            Assert.AreEqual(@"qemu/inc", (cpath as RelativeCrosspath).ToString());
             //Assert.AreEqual(@"/local/store/qemu", ((AbsoluteCrosspath) cpath).Get(CrosspathFlavor.Unix));
             //Assert.AreEqual(@"C:\local\store\qemu", ((AbsoluteCrosspath) cpath).Get(CrosspathFlavor.Windows));
         }
@@ -178,10 +178,33 @@ namespace CrosspathUnitTests {
 
         [TestMethod]
         public void GetContainingDirectory() {
-            String filename = "lzcintrin.h";
-            Crosspath xpath = Crosspath.FromString(filename);
-            xpath.ToContainingDirectory();
-            Assert.AreEqual("", xpath.ToString());
+            String filename1 = "lzcintrin.h";
+            Crosspath xpath1 = Crosspath.FromString(filename1);
+            xpath1.ToContainingDirectory();
+            Assert.AreEqual(".", xpath1.ToString());
+
+            String filename2 = "/lzcintrin.h";
+            Crosspath xpath2 = Crosspath.FromString(filename2);
+            xpath2.ToContainingDirectory();
+            Assert.AreEqual("/", xpath2.ToString());
+
+            String filename3 = "someinc/lzcintrin.h";
+            Crosspath xpath3 = Crosspath.FromString(filename3);
+            xpath3.ToContainingDirectory();
+            Assert.AreEqual("someinc", xpath3.ToString());
+
+            String filename4 = "/path/to/lzcintrin.h";
+            Crosspath xpath4 = Crosspath.FromString(filename4);
+            xpath4.ToContainingDirectory();
+            Assert.AreEqual("/path/to", xpath4.ToString());
+        }
+
+        [TestMethod]
+        public void AppendedTest() {
+            AbsoluteCrosspath xLocalIncludeDirectory = AbsoluteCrosspath.GetCurrentDirectory();
+            RelativeCrosspath xRelPath = RelativeCrosspath.FromString("lzcintrin.h");
+            AbsoluteCrosspath xPath = xLocalIncludeDirectory.Appended(xRelPath);
+            Assert.AreEqual(xPath.ToString(), xLocalIncludeDirectory.ToString() + @"\" + xRelPath.ToString());
         }
     }
 }

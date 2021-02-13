@@ -3,17 +3,21 @@ using System.Text;
 
 namespace CrosspathLib {
     public class RelativeCrosspath : Crosspath {
-        internal static RelativeCrosspath CreateInstance() {
+        protected internal static RelativeCrosspath CreateInstance() {
             return new RelativeCrosspath();
         }
 
         protected RelativeCrosspath() {
         }
 
-        public AbsoluteCrosspath WorkingDirectory { get; private set; }
+        public AbsoluteCrosspath WorkingDirectory { get; protected set; }
 
+        /// <summary>
+        /// Creates a copy of instance.
+        /// </summary>
+        /// <param name="source">Source RelativeCrosspath object, which will remain untouched.</param>
         public RelativeCrosspath(RelativeCrosspath source) : base(source) {
-            this.WorkingDirectory = new AbsoluteCrosspath(WorkingDirectory);
+            this.WorkingDirectory = source.WorkingDirectory;
         }
 
         public void SetWorkingDirectory(AbsoluteCrosspath workdir) {
@@ -31,10 +35,28 @@ namespace CrosspathLib {
             return new AbsoluteCrosspath(WorkingDirectory).Append(this) as AbsoluteCrosspath;
         }
 
+        public AbsoluteCrosspath Absolutized(AbsoluteCrosspath root) {
+            return new AbsoluteCrosspath(root).Append(this) as AbsoluteCrosspath;
+        }
+
+        /// <summary>
+        /// Creates RelativeCrosspath from string.
+        /// If string does not contain a relative path, then throw an exception.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public new static RelativeCrosspath FromString(String path) {
+            Crosspath xpath = Crosspath.FromString(path);
+            if (!(xpath is RelativeCrosspath)) {
+                throw new CrosspathLibException("the path provided is not relative");
+            }
+            return xpath as RelativeCrosspath;
+        }
+
         public override String ToString() {
             // filter out .. and .
             if (directories.Count == 0) {
-                return string.Empty;
+                return ".";
             }
 
             // we need to inverse stack before output

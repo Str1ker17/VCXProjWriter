@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using CrosspathLib;
@@ -83,7 +84,9 @@ namespace VcxProjCLI {
         }
 
         private static void Main(String[] args) {
+#if !DEBUG
             try {
+#endif
                 ProcessArgs(args);
 
                 Stopwatch sw = new Stopwatch();
@@ -112,7 +115,8 @@ namespace VcxProjCLI {
                 // DONE: also check for:
                 //   - project file accessibility
                 //   - include dirs accessibility
-                sln.CheckForTotalRebase();
+                List<IncludeDirectory> remoteNotRebased = new List<IncludeDirectory>();
+                sln.CheckForTotalRebase(ref remoteNotRebased);
 
                 try {
                     Directory.Delete(config.Outdir, true);
@@ -122,7 +126,12 @@ namespace VcxProjCLI {
                 }
 
                 if (config.Remote != null) {
-                    sln.DownloadExtraInfoFromRemote(config.Remote, config.Outdir);
+                    sln.DownloadCompilerIncludeDirectoriesFromRemote(config.Remote, config.Outdir);
+                    foreach (IncludeDirectory includeDirectory in remoteNotRebased) {
+                        includeDirectory.RebaseToLocal(config.Remote
+                              , AbsoluteCrosspath.GetCurrentDirectory().Append(RelativeCrosspath.FromString(config.Outdir))
+                                                                       .Append(RelativeCrosspath.FromString(String.Format(SolutionStructure.RemoteIncludePath, config.Remote.Host))));
+                    }
                 }
 
                 sw.Reset();
@@ -134,6 +143,7 @@ namespace VcxProjCLI {
                 Console.WriteLine();
                 Console.WriteLine($"Elapsed time: parseAndGroup = {parseAndGroup} ms, remoteInfo = {remoteInfo} ms" 
                                 + $", rebase = {rebase} ms, write = {write} ms.");
+#if !DEBUG
             }
             catch (Exception e) {
                 Console.WriteLine($"[x] {e.Message}");
@@ -143,6 +153,7 @@ namespace VcxProjCLI {
                 Console.WriteLine("Press Enter to continue...");
                 Console.ReadLine();
             }
+#endif
         }
     }
 }

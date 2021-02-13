@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace CrosspathLib {
     public class AbsoluteCrosspath : Crosspath {
-        internal static AbsoluteCrosspath CreateInstance() {
+        protected internal static Crosspath CreateInstance() {
             return new AbsoluteCrosspath();
         }
 
@@ -17,7 +18,7 @@ namespace CrosspathLib {
         /// <summary>
         /// Creates a copy of instance.
         /// </summary>
-        /// <param name="source"></param>
+        /// <param name="source">Source AbsoluteCrosspath object, which will remain untouched.</param>
         public AbsoluteCrosspath(AbsoluteCrosspath source) : base(source) {
         }
 
@@ -33,6 +34,28 @@ namespace CrosspathLib {
                 throw new CrosspathLibException("the path provided is not absolute");
             }
             return xpath as AbsoluteCrosspath;
+        }
+
+        public static AbsoluteCrosspath GetCurrentDirectory() {
+            String pwd = Directory.GetCurrentDirectory();
+            return AbsoluteCrosspath.FromString(pwd);
+        }
+
+        public new AbsoluteCrosspath Append(RelativeCrosspath part) {
+            return base.Append(part) as AbsoluteCrosspath;
+        }
+
+        public AbsoluteCrosspath Appended(RelativeCrosspath part) {
+            return new AbsoluteCrosspath(this).Append(part);
+        }
+
+        /// <summary>
+        /// Removes last entry if exists and returns self.
+        /// This is useful to get containing directory.
+        /// </summary>
+        /// <returns>Modified self object</returns>
+        public new virtual AbsoluteCrosspath ToContainingDirectory() {
+            return base.ToContainingDirectory() as AbsoluteCrosspath;
         }
 
         /// <summary>

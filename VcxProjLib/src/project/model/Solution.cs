@@ -15,7 +15,7 @@ namespace VcxProjLib {
         // TODO: use collection comparator instead to distinguish between same/different dirs
         // remember that solutionIncludeDirectories is provided for convenience of rebasing
         // but it does NOT need to be sorted and/or preserve order. go to Project for this
-        protected Dictionary<String, AbsoluteCrosspath> solutionIncludeDirectories;
+        protected Dictionary<String, IncludeDirectory> solutionIncludeDirectories;
         protected Dictionary<IncludeDirectoryType, String> includeParam;
         protected HashSet<Guid> acquiredGuids;
         protected Guid selfGuid;
@@ -24,7 +24,7 @@ namespace VcxProjLib {
             projects = new Dictionary<Int64, Project>();
             solutionFiles = new HashSet<ProjectFile>();
             solutionCompilers = new HashSet<Compiler>();
-            solutionIncludeDirectories = new Dictionary<String, AbsoluteCrosspath>();
+            solutionIncludeDirectories = new Dictionary<String, IncludeDirectory>();
             includeParam = new Dictionary<IncludeDirectoryType, String> {
                     {IncludeDirectoryType.Generic, "-I"}
                   , {IncludeDirectoryType.Quote, "-iquote"}
@@ -67,7 +67,7 @@ namespace VcxProjLib {
             }
 
             // move include directories to another location
-            foreach (KeyValuePair<String, AbsoluteCrosspath> includeDirPair in solutionIncludeDirectories) {
+            foreach (KeyValuePair<String, IncludeDirectory> includeDirPair in solutionIncludeDirectories) {
                 includeDirPair.Value.Rebase(before, after);
             }
             
@@ -153,18 +153,20 @@ namespace VcxProjLib {
 
                         // DONE: determine more accurately which include is local and which is remote
                         // this is done with the use of Solution.Rebase() so we customly point to local files
-                        AbsoluteCrosspath includeDir;
+                        AbsoluteCrosspath includeDirPath;
                         Crosspath includeDirTmp = Crosspath.FromString(includeDirStr);
                         if (includeDirTmp is RelativeCrosspath relIncludeDirEx) {
                             relIncludeDirEx.SetWorkingDirectory(Crosspath.FromString(entry.directory) as AbsoluteCrosspath);
-                            includeDir = relIncludeDirEx.Absolutized();
+                            includeDirPath = relIncludeDirEx.Absolutized();
                         }
                         else {
-                            includeDir = includeDirTmp as AbsoluteCrosspath;
+                            includeDirPath = includeDirTmp as AbsoluteCrosspath;
                         }
 
-                        String includeDirStrReconstructed = includeDir.ToString();
+                        String includeDirStrReconstructed = includeDirPath.ToString();
+                        IncludeDirectory includeDir;
                         if (!solutionIncludeDirectories.ContainsKey(includeDirStrReconstructed)) {
+                            includeDir = new IncludeDirectory(includeDirPath, idt);
                             solutionIncludeDirectories.Add(includeDirStrReconstructed, includeDir);
                             Logger.WriteLine(LogLevel.Debug, $"New include directory '{includeDirStrReconstructed}'");
                         }
@@ -271,25 +273,28 @@ namespace VcxProjLib {
             }
         }
 
-        public void DownloadExtraInfoFromRemote(RemoteHost remote, String dir) {
+        public void DownloadCompilerIncludeDirectoriesFromRemote(RemoteHost remote, String dir) {
             String pwd = Directory.GetCurrentDirectory();
             Directory.CreateDirectory(dir);
             Directory.SetCurrentDirectory(dir);
             foreach (Compiler compiler in solutionCompilers) {
-                compiler.DownloadAdditionalInfo(remote);
+                compiler.DownloadStandardIncludeDirectories(remote);
             }
             Directory.SetCurrentDirectory(pwd);
         }
 
         // TODO: these WriteLine calls break encapsulation
-        public void CheckForTotalRebase() {
-            foreach (KeyValuePair<String, AbsoluteCrosspath> includeDirPair in solutionIncludeDirectories) {
-                if (includeDirPair.Value.Flavor == CrosspathFlavor.Unix) {
-                    Logger.WriteLine(LogLevel.Warning, $"the remote include directory '{includeDirPair.Value}' was not rebased");
+        public void CheckForTotalRebase(ref List<IncludeDirectory> remoteNotRebased) {
+            foreach (IncludeDirectory includeDir in solutionIncludeDirectories.Values) {
+                if (includeDir.Flavor == CrosspathFlavor.Unix) {
+                    Logger.WriteLine(LogLevel.Warning, $"the remote include directory '{includeDir}' was not rebased");
+                    if (remoteNotRebased != null) {
+                        remoteNotRebased.Add(includeDir);
+                    }
                 }
-                else if (includeDirPair.Value.Flavor == CrosspathFlavor.Windows) {
-                    if (!Directory.Exists(includeDirPair.Value.ToString())) {
-                        Logger.WriteLine(LogLevel.Warning, $"directory '{includeDirPair.Value}' does not exist after rebase");
+                else if (includeDir.Flavor == CrosspathFlavor.Windows) {
+                    if (!Directory.Exists(includeDir.ToString())) {
+                        Logger.WriteLine(LogLevel.Warning, $"directory '{includeDir}' does not exist after rebase");
                     }
                 }
             }

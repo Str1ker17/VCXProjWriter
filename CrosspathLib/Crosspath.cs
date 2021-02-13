@@ -128,31 +128,41 @@ namespace CrosspathLib {
             return xpath;
         }
 
-        ///public Boolean IsAbsolute() {
-        ///    return this.Origin == CrosspathOrigin.Absolute;
-        ///}
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="dir"></param>
+        /// <param name="dir">A single dir component.</param>
         protected void Chdir(String dir) {
             if (dir == ".")
                 return;
             if (dir == "..") {
-                if (this is AbsoluteCrosspath) {
+                if (directories.Count > 0) {
+                    if (directories.Last.Value == "..") {
+                        if (Origin == CrosspathOrigin.Relative) {
+                            directories.AddLast(dir);
+                            return;
+                        }
+                    }
+                    // this is the main code branch
                     directories.RemoveLast();
+                    return;
                 }
-                return;
+                else {
+                    if (Origin == CrosspathOrigin.Absolute) {
+                        throw new CrosspathLibException("attempt to go out of absolute path");
+                    }
+
+                    // TODO: handle out-of-tree paths more precisely
+                    // allow putting ".." to the beginning of relative paths
+                    directories.AddLast(dir);
+                    return;
+                }
             }
 
             directories.AddLast(dir);
         }
 
         public Crosspath Append(RelativeCrosspath part) {
-            //if (part.IsAbsolute()) {
-            //    throw new ArgumentOutOfRangeException(nameof(part), "appended part should be relative");
-            //}
-
             foreach (String dir in part.directories) {
                 Chdir(dir);
             }
@@ -165,8 +175,8 @@ namespace CrosspathLib {
         /// This is useful to get containing directory.
         /// </summary>
         /// <returns>Modified self object</returns>
-        public Crosspath ToContainingDirectory() {
-            if (directories.Count > 1) {
+        public virtual Crosspath ToContainingDirectory() {
+            if (directories.Count > 0) {
                 directories.RemoveLast();
             }
 

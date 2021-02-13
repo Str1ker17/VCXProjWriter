@@ -36,7 +36,7 @@ namespace VcxProjUnitTests {
         }
 
         [TestMethod]
-        public void PrintGCCIncludeDirectoriesv2AtOnce() {
+        public void PrintGCCIncludeDirectoriesCppAtOnce() {
             RemoteHost remote = InitRemoteHost();
             remote.PrepareForConnection();
             int rv = remote.Execute("gcc -x c++ -c -Wp,-v - < /dev/null", out String result);

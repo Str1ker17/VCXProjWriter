@@ -40,5 +40,6 @@ namespace VcxProjLib {
         }
 
         public static readonly String CompilerPropsFileFormat = @"compilers\{0}\compiler_{0}.props";
+        public static readonly String RemoteIncludePath = @"remote\{0}";
     }
 }

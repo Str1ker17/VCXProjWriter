@@ -27,6 +27,7 @@ namespace VcxProjLib {
 
         protected static readonly String[] LineEndings = {"\r\n", "\n", "\r"};
         protected static readonly Char[] LineEndingsChar = {'\n', '\r'};
+        public static readonly String RemoteTempFile = "/tmp/VCXProjWriter.c";
 
         public Compiler(String path) {
             ExePath = path;
@@ -53,16 +54,15 @@ namespace VcxProjLib {
             }
 
             // create temporary .c file for auto-distinguishment between C and C++
-            String tempFile = "/tmp/VCXProjWriterTemp.c";
-            if (remote.Execute($"touch {tempFile} || echo > {tempFile}", out String nothing) != RemoteHost.Success) {
+            if (remote.Execute($"touch {RemoteTempFile} || echo > {RemoteTempFile}", out String nothing) != RemoteHost.Success) {
                 throw new ApplicationException("could not create temporary file");
             }
 
-            if (remote.Execute($"{ExePath} -E -dM {tempFile}", out String defines) != RemoteHost.Success) {
+            if (remote.Execute($"{ExePath} -E -dM {RemoteTempFile}", out String defines) != RemoteHost.Success) {
                 throw new ApplicationException("could not extract defines from compiler");
             }
 
-            if (remote.Execute($"{ExePath} -c -Wp,-v {tempFile} 2>&1 1> /dev/null", out String includeDirs) != RemoteHost.Success) {
+            if (remote.Execute($"{ExePath} -c -Wp,-v {RemoteTempFile} 2>&1 1> /dev/null", out String includeDirs) != RemoteHost.Success) {
                 throw new ApplicationException("could not extract include dirs from compiler");
             }
 
@@ -146,53 +146,13 @@ End of search list.
             HaveAdditionalInfo = true;
         }
 
-        public void DownloadAdditionalInfo(RemoteHost remote) {
+        public void DownloadStandardIncludeDirectories(RemoteHost remote) {
             // use sftp, or, when not possible, ssh cat
-            int xtractBufSize = 32768;
-            Byte[] zipExtractBuf = new Byte[xtractBufSize];
+            AbsoluteCrosspath xpwd = AbsoluteCrosspath.GetCurrentDirectory();
+            AbsoluteCrosspath xCompilerDir = xpwd.Appended(RelativeCrosspath.FromString($@"compilers\{ShortName}"));
+            Directory.CreateDirectory(xCompilerDir.ToString());
             foreach (IncludeDirectory includeDirectory in IncludeDirectories) {
-                if (includeDirectory.Flavor == CrosspathFlavor.Windows) {
-                    continue;
-                }
-                String remoteFilename = $"/tmp/{includeDirectory.ShortName}.zip";
-                String localFilename = $"{includeDirectory.ShortName}.zip";
-                String localDirectory = $@"compilers\{ShortName}\include\{includeDirectory.ShortName}";
-                String localDirectoryFull = Path.GetFullPath(localDirectory);
-                if (remote.Execute($"pushd {includeDirectory} && zip -9 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
-                    Logger.WriteLine(LogLevel.Error, result);
-                }
-                remote.DownloadFile(remoteFilename, localFilename);
-                Directory.CreateDirectory(localDirectory);
-                //ZipFile.ExtractToDirectory(localFilename, localDirectory, Encoding.UTF8);
-                using (FileStream fs = new FileStream(localFilename, FileMode.Open)) {
-                    ZipArchive za = new ZipArchive(fs, ZipArchiveMode.Read);
-                    foreach (ZipArchiveEntry zaEntry in za.Entries) {
-                        if (File.Exists(zaEntry.FullName)) {
-                            Logger.WriteLine(LogLevel.Warning, $"file '{zaEntry.FullName}' already exists - case problems?");
-                            continue;
-                        }
-
-                        Directory.CreateDirectory(Crosspath.FromString(zaEntry.FullName).ToContainingDirectory().ToString());
-                        using (FileStream xfs = new FileStream(zaEntry.FullName, FileMode.CreateNew)) {
-                            using (Stream zas = zaEntry.Open()) {
-                                while (true) {
-                                    int len = zas.Read(zipExtractBuf, 0, xtractBufSize);
-                                    if (len == 0) {
-                                        // EOF
-                                        break;
-                                    }
-                                    xfs.Write(zipExtractBuf, 0, len);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // if extraction went ok, we can remove remote file
-                remote.Execute($"rm {remoteFilename}", out String nonvaluable);
-
-                // since we definitely have a local copy of include directory, rebase on it
-                includeDirectory.Rebase(includeDirectory, AbsoluteCrosspath.FromString(localDirectoryFull));
+                includeDirectory.RebaseToLocal(remote, xCompilerDir);
             }
         }
 
@@ -200,7 +160,8 @@ End of search list.
         /// Writes compiler_${ShortName}.props and compiler_$(ShortName}_compat.h
         /// </summary>
         public void WriteToFile() {
-            Directory.CreateDirectory(Path.GetDirectoryName(CompilerCompatHeaderPath));
+            AbsoluteCrosspath xpath = AbsoluteCrosspath.GetCurrentDirectory().Append(RelativeCrosspath.FromString(CompilerCompatHeaderPath)).ToContainingDirectory();
+            Directory.CreateDirectory(xpath.ToString());
             using (StreamWriter sw = new StreamWriter(CompilerCompatHeaderPath, false, Encoding.UTF8)) {
                 sw.WriteLine(@"#pragma once");
                 foreach (Define compilerInternalDefine in Defines) {
@@ -232,9 +193,9 @@ End of search list.
             projectPropertyGroupIDU.AppendChild(projectIncludePaths);
 
             // maybe someday this will be helpful, but now it can be inherited from Solution.props
-            XmlElement projectForcedIncludes = doc.CreateElement("SolutionCompilerCompat");
+            XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             // DONE: add compiler compat header to forced includes
-            projectForcedIncludes.InnerText = $@"$(SolutionDir)\{CompilerCompatHeaderPath}";
+            projectForcedIncludes.InnerText = $@"$(SolutionDir)\solution_compat.h;$(SolutionDir)\{CompilerCompatHeaderPath};$(SolutionDir)\solution_post_compiler_compat.h";
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
 
             projectNode.AppendChild(projectPropertyGroupIDU);
