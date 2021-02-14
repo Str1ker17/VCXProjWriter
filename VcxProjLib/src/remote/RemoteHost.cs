@@ -75,7 +75,7 @@ namespace VcxProjLib {
             }
 
             using (SshCommand sshcmd = _sshClientConnection.CreateCommand(cmd)) {
-                sshcmd.CommandTimeout = TimeSpan.FromSeconds(3);
+                sshcmd.CommandTimeout = TimeSpan.FromSeconds(15);
                 result = sshcmd.Execute();
                 Logger.WriteLine(LogLevel.Debug, $"run {cmd} on {this}, exit code = {sshcmd.ExitStatus}");
                 return sshcmd.ExitStatus;

@@ -21,7 +21,7 @@ namespace VcxProjLib {
                 return;
             }
 
-            int xtractBufSize = 32768;
+            int xtractBufSize = 65536;
             Byte[] zipExtractBuf = new Byte[xtractBufSize];
 
             String remoteFilename = $"/tmp/{ShortName}.zip";
@@ -31,7 +31,8 @@ namespace VcxProjLib {
             AbsoluteCrosspath xLocalIncludeDirectory = localXpath.Appended(RelativeCrosspath.FromString(localDirectoryPattern));
             String localIncludeDirectory = xLocalIncludeDirectory.ToString();
             String localFilename = localXpath.Appended(RelativeCrosspath.FromString(localFilenamePattern)).ToString();
-            if (remote.Execute($"pushd {this} && zip -9 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
+            Logger.WriteLine(LogLevel.Info, $"Rolling ${this} into {localFilenamePattern}...");
+            if (remote.Execute($"pushd {this} && zip -6 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
                 Logger.WriteLine(LogLevel.Error, result);
                 return;
             }
@@ -39,6 +40,7 @@ namespace VcxProjLib {
             Directory.CreateDirectory(localXpath.ToString());
             remote.DownloadFile(remoteFilename, localFilename);
             Directory.CreateDirectory(localIncludeDirectory);
+            File.WriteAllText(xLocalIncludeDirectory.Appended(RelativeCrosspath.FromString("origin.txt")).ToString(), this.ToString());
 
             // not working bcz of NTFS case & special names restrictions. extract manually.
             //ZipFile.ExtractToDirectory(localFilename, localDirectory, Encoding.UTF8);
@@ -87,7 +89,7 @@ namespace VcxProjLib {
             File.Delete(localFilename);
 
             // since we definitely have a local copy of include directory, rebase on it
-            this.Rebase(this, AbsoluteCrosspath.FromString(localIncludeDirectory));
+            this.Rebase(this, xLocalIncludeDirectory);
         }
     }
 }
