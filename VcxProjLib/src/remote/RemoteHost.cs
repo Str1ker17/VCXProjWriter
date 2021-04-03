@@ -60,8 +60,9 @@ namespace VcxProjLib {
 
         public void PrepareForConnection() {
             _connectionInfo = new PasswordConnectionInfo(_host, _port, _username, _password);
-            _sshClientConnection = new SshClient(_connectionInfo);
-            _sshClientConnection.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            _sshClientConnection = new SshClient(_connectionInfo) {
+                    KeepAliveInterval = TimeSpan.FromSeconds(15)
+            };
             _sftpClientConnection = new SftpClient(_connectionInfo);
         }
 

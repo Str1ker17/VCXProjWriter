@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using CrosspathLib;
 using Newtonsoft.Json;
 
@@ -43,11 +44,11 @@ namespace VcxProjLib {
         }
 
         public static Configuration LoadFromFile(String filename) {
-            return JsonConvert.DeserializeObject<Configuration>(System.IO.File.ReadAllText(filename));
+            return JsonConvert.DeserializeObject<Configuration>(File.ReadAllText(filename));
         }
 
         public void SaveToFile(String filename) {
-            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(this, Formatting.Indented));
+            File.WriteAllText(filename, JsonConvert.SerializeObject(this, Formatting.Indented));
         }
 
         public void AssignRemote(RemoteHost remote) {

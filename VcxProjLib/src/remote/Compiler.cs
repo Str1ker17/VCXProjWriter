@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Text;
 using System.Xml;
 using CrosspathLib;
@@ -23,7 +22,7 @@ namespace VcxProjLib {
         /// Assuming that remote compiler removes duplicates on its own
         /// </summary>
         protected List<IncludeDirectory> IncludeDirectories { get; }
-        protected SortedSet<Define> Defines { get; }
+        protected HashSet<Define> Defines { get; }
 
         protected static readonly String[] LineEndings = {"\r\n", "\n", "\r"};
         protected static readonly Char[] LineEndingsChar = {'\n', '\r'};
@@ -33,7 +32,7 @@ namespace VcxProjLib {
             ExePath = path;
             ShortName = Crosspath.FromString(path).LastEntry;
             IncludeDirectories = new List<IncludeDirectory>();
-            Defines = new SortedSet<Define>(); // TODO: add comparer
+            Defines = new HashSet<Define>(); // TODO: add comparer
         }
 
         /// <summary>
@@ -41,7 +40,7 @@ namespace VcxProjLib {
         /// </summary>
         /// <param name="remote">Remote host where compiler installed</param>
         public void ExtractAdditionalInfo(RemoteHost remote) {
-            if (remote.Execute($"pwd || echo $PWD", out String pwd) != RemoteHost.Success) {
+            if (remote.Execute("pwd || echo $PWD", out String pwd) != RemoteHost.Success) {
                 throw new ApplicationException("could not get current directory name");
             }
 
@@ -54,7 +53,7 @@ namespace VcxProjLib {
             }
 
             // create temporary .c file for auto-distinguishment between C and C++
-            if (remote.Execute($"touch {RemoteTempFile} || echo > {RemoteTempFile}", out String nothing) != RemoteHost.Success) {
+            if (remote.Execute($"touch {RemoteTempFile} || echo > {RemoteTempFile}", out String _) != RemoteHost.Success) {
                 throw new ApplicationException("could not create temporary file");
             }
 
@@ -159,7 +158,7 @@ End of search list.
         /// <summary>
         /// Writes compiler_${ShortName}.props and compiler_$(ShortName}_compat.h
         /// </summary>
-        public void WriteToFile() {
+        public void WriteToFile(AbsoluteCrosspath solutionDir) {
             AbsoluteCrosspath xpath = AbsoluteCrosspath.GetCurrentDirectory().Append(RelativeCrosspath.FromString(CompilerCompatHeaderPath)).ToContainingDirectory();
             Directory.CreateDirectory(xpath.ToString());
             using (StreamWriter sw = new StreamWriter(CompilerCompatHeaderPath, false, Encoding.UTF8)) {
@@ -187,7 +186,7 @@ End of search list.
             XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
             // DONE: intermix project include directories with compiler include directories
             foreach (IncludeDirectory includePath in IncludeDirectories) {
-                projectIncludePaths.InnerText += includePath + ";";
+                projectIncludePaths.InnerText += includePath.GetLocalProjectPath(solutionDir) + ";";
             }
             projectIncludePaths.InnerText += "$(CompilerIncludeDirAfter);$(NMakeIncludeSearchPath)";
             projectPropertyGroupIDU.AppendChild(projectIncludePaths);

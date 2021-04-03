@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using CrosspathLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting.Logging;
 
 namespace CrosspathUnitTests {
     [TestClass]
@@ -9,15 +10,15 @@ namespace CrosspathUnitTests {
         [TestMethod]
         public void Polymorphism() {
             Crosspath cpath = Crosspath.FromString(@"/");
-            AbsoluteCrosspath apath = cpath as AbsoluteCrosspath;
-            RelativeCrosspath rpath = cpath as RelativeCrosspath;
+            AbsoluteCrosspath unused = cpath as AbsoluteCrosspath;
+            RelativeCrosspath unused1 = cpath as RelativeCrosspath;
         }
 
         [TestMethod]
         public void DynamicReturn() {
             Crosspath cpath = Crosspath.FromString(@"/");
             if (cpath.Origin == CrosspathOrigin.Absolute) {
-                (cpath as AbsoluteCrosspath).ToString();
+                Logger.LogMessage(((AbsoluteCrosspath) cpath).ToString());
             }
             else {
                 Assert.Fail("it was absolute");
@@ -25,7 +26,7 @@ namespace CrosspathUnitTests {
 
             Crosspath cpath2 = Crosspath.FromString(@".");
             if (cpath2.Origin == CrosspathOrigin.Relative) {
-                (cpath2 as RelativeCrosspath).ToString();
+                Logger.LogMessage(((RelativeCrosspath) cpath2).ToString());
             }
             else {
                 Assert.Fail("it was relative");
@@ -74,20 +75,18 @@ namespace CrosspathUnitTests {
             }
         }
 
-        /*
         [TestMethod]
         public void TestMethod3() {
             Crosspath cpath = Crosspath.FromString(@"/local/store/qemu");
             Assert.IsInstanceOfType(cpath, typeof(AbsoluteCrosspath));
             Assert.AreEqual(CrosspathFlavor.Unix, cpath.Flavor);
             Assert.AreEqual(CrosspathOrigin.Absolute, cpath.Origin);
-            Assert.AreEqual(@"/local/store/qemu", (cpath as AbsoluteCrosspath).Get(CrosspathFlavor.Unix));
-            Assert.AreEqual(@"C:\local\store\qemu", cpath.Absolute.Get(CrosspathFlavor.Windows));
-            // TODO: substitute absolute paths
-            //Assert.AreEqual(@"D:\projects\local\store\qemu"
-            //      , ((AbsoluteCrosspath) cpath).GetBasedOn(CrosspathFlavor.Windows, @"D:\Projects"));
+            Assert.AreEqual(@"/local/store/qemu", ((AbsoluteCrosspath) cpath).ToString());
+            // DONE: substitute (rebase) absolute paths
+            Assert.AreEqual(@"D:\Projects\local\store\qemu"
+                  , ((AbsoluteCrosspath) cpath).Rebase(AbsoluteCrosspath.FromString("/")
+                  , AbsoluteCrosspath.FromString(@"D:\Projects")).ToString());
         }
-        */
 
         [TestMethod]
         public void RelativeWithGarbage1() {
@@ -95,9 +94,7 @@ namespace CrosspathUnitTests {
             Assert.IsInstanceOfType(cpath, typeof(RelativeCrosspath));
             Assert.AreEqual(CrosspathFlavor.Unix, cpath.Flavor);
             Assert.AreEqual(CrosspathOrigin.Relative, cpath.Origin);
-            Assert.AreEqual(@"qemu/inc", (cpath as RelativeCrosspath).ToString());
-            //Assert.AreEqual(@"/local/store/qemu", ((AbsoluteCrosspath) cpath).Get(CrosspathFlavor.Unix));
-            //Assert.AreEqual(@"C:\local\store\qemu", ((AbsoluteCrosspath) cpath).Get(CrosspathFlavor.Windows));
+            Assert.AreEqual(@"qemu/inc", ((RelativeCrosspath) cpath).ToString());
         }
 
         /*
@@ -138,7 +135,7 @@ namespace CrosspathUnitTests {
             Assert.AreEqual(CrosspathOrigin.Absolute, xdir.Origin);
             Assert.AreEqual(CrosspathFlavor.Unix, xdir.Flavor);
 
-            Assert.AreEqual(@"/path/to/file/source.c", (xpath as RelativeCrosspath).Absolutized().ToString());
+            Assert.AreEqual(@"/path/to/file/source.c", ((RelativeCrosspath) xpath).Absolutized().ToString());
         }
 
         /// <summary>
@@ -157,7 +154,7 @@ namespace CrosspathUnitTests {
             Crosspath xpath = Crosspath.FromString("/local/store/bin-src/qemu/hw/display/trace.c");
             AbsoluteCrosspath before = Crosspath.FromString("/local/store/bin-src/qemu") as AbsoluteCrosspath;
             AbsoluteCrosspath after = Crosspath.FromString(@"D:\Workspace\Source\qemu") as AbsoluteCrosspath;
-            AbsoluteCrosspath apath = (xpath as AbsoluteCrosspath).Rebase(before, after);
+            AbsoluteCrosspath apath = ((AbsoluteCrosspath) xpath).Rebase(before, after);
             Assert.AreEqual(CrosspathFlavor.Windows, apath.Flavor);
             Assert.AreEqual('D', apath.WindowsRootDrive);
             Assert.AreEqual(@"D:\Workspace\Source\qemu\hw\display\trace.c", apath.ToString());
@@ -169,7 +166,7 @@ namespace CrosspathUnitTests {
             Crosspath xpath = Crosspath.FromString("/local/store/bin-src/qemu");
             AbsoluteCrosspath before = Crosspath.FromString("/local/store/bin-src/qemu") as AbsoluteCrosspath;
             AbsoluteCrosspath after = Crosspath.FromString(@"D:\Workspace\Source\qemu") as AbsoluteCrosspath;
-            AbsoluteCrosspath apath = (xpath as AbsoluteCrosspath).Rebase(before, after);
+            AbsoluteCrosspath apath = ((AbsoluteCrosspath) xpath).Rebase(before, after);
             Assert.AreEqual(CrosspathFlavor.Windows, apath.Flavor);
             Assert.AreEqual('D', apath.WindowsRootDrive);
             Assert.AreEqual(@"D:\Workspace\Source\qemu", apath.ToString());
@@ -204,7 +201,57 @@ namespace CrosspathUnitTests {
             AbsoluteCrosspath xLocalIncludeDirectory = AbsoluteCrosspath.GetCurrentDirectory();
             RelativeCrosspath xRelPath = RelativeCrosspath.FromString("lzcintrin.h");
             AbsoluteCrosspath xPath = xLocalIncludeDirectory.Appended(xRelPath);
-            Assert.AreEqual(xPath.ToString(), xLocalIncludeDirectory.ToString() + @"\" + xRelPath.ToString());
+            Assert.AreEqual(xPath.ToString(), xLocalIncludeDirectory + @"\" + xRelPath);
+        }
+
+        [TestMethod]
+        public void RelativizeTest1() {
+            AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu");
+            AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu/hw/mips/serial.c");
+            RelativeCrosspath relPath = xFile.Relativize(xIncludeDirectory);
+            Assert.AreEqual("hw/mips/serial.c", relPath.ToString());
+        }
+
+        [TestMethod]
+        public void RelativizeTest2() {
+            AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu");
+            AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString("/local/store/fast/bin-src/ccache/ccache.c");
+            RelativeCrosspath relPath = xFile.Relativize(xIncludeDirectory);
+            Assert.AreEqual("../../fast/bin-src/ccache/ccache.c", relPath.ToString());
+        }
+
+        [TestMethod]
+        public void RelativizeTest3() {
+            AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu");
+            AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString("/local/store/fast/bin-src/ccache/ccache.c");
+            try {
+                RelativeCrosspath unused = xFile.Relativize(xIncludeDirectory, true);
+                Assert.Fail("should fail");
+            }
+            catch (CrosspathLibException) {
+
+            }
+        }
+
+        [TestMethod]
+        public void RelativizeTestWin1() {
+            AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString(@"C:\Windows\system32\config");
+            AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString(@"C:\Program Files (x86)\Common Files\Microsoft");
+            RelativeCrosspath relPath = xFile.Relativize(xIncludeDirectory);
+            Assert.AreEqual(@"..\..\..\Program Files (x86)\Common Files\Microsoft", relPath.ToString());
+        }
+
+        [TestMethod]
+        public void RelativizeTestWin2() {
+            AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString(@"C:\Windows\system32\config");
+            AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString(@"D:\Games\Call of Duty 2");
+            try {
+                RelativeCrosspath unused = xFile.Relativize(xIncludeDirectory);
+                Assert.Fail("should fail");
+            }
+            catch {
+                // ignored
+            }
         }
     }
 }

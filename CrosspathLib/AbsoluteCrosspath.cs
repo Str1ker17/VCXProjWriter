@@ -36,6 +36,14 @@ namespace CrosspathLib {
             return xpath as AbsoluteCrosspath;
         }
 
+        public static AbsoluteCrosspath FromString(String path, AbsoluteCrosspath workingDir) {
+            Crosspath xpath = Crosspath.FromString(path);
+            if (!(xpath is AbsoluteCrosspath)) {
+                return ((RelativeCrosspath) xpath).Absolutized(workingDir);
+            }
+            return xpath as AbsoluteCrosspath;
+        }
+
         public static AbsoluteCrosspath GetCurrentDirectory() {
             String pwd = Directory.GetCurrentDirectory();
             return AbsoluteCrosspath.FromString(pwd);
@@ -120,19 +128,18 @@ namespace CrosspathLib {
             }
 
             Boolean cantRebase = false;
-            var myIter = directories.GetEnumerator();
-            var theirsIter = oldBase.directories.GetEnumerator();
-            for (int idx = 0; idx < oldBase.directories.Count; idx++) {
-                myIter.MoveNext();
-                theirsIter.MoveNext();
-                if (myIter.Current != theirsIter.Current) {
-                    cantRebase = true;
-                    break;
+            using (var myIter = directories.GetEnumerator()) {
+                using (var theirsIter = oldBase.directories.GetEnumerator()) {
+                    for (int idx = 0; idx < oldBase.directories.Count; idx++) {
+                        myIter.MoveNext();
+                        theirsIter.MoveNext();
+                        if (myIter.Current != theirsIter.Current) {
+                            cantRebase = true;
+                            break;
+                        }
+                    }
                 }
             }
-
-            myIter.Dispose();
-            theirsIter.Dispose();
 
             if (cantRebase) {
                 return this;
@@ -163,6 +170,10 @@ namespace CrosspathLib {
             Flavor = newBase.Flavor;
 
             return this;
+        }
+
+        public RelativeCrosspath Relativize(AbsoluteCrosspath workingDir, Boolean dontGoOut = false) {
+            return RelativeCrosspath.CreateRelativePath(this, workingDir, dontGoOut);
         }
     }
 }

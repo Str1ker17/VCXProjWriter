@@ -4,11 +4,13 @@ using System.IO.Compression;
 using CrosspathLib;
 
 namespace VcxProjLib {
-    public class IncludeDirectory : AbsoluteCrosspath {
+    public class IncludeDirectory : AbsoluteCrosspath, IComparable<IncludeDirectory> {
         public IncludeDirectoryType Type { get; }
         public String ShortName { get; }
 
-        protected static int serial = 1;
+        protected Boolean autoDownloaded = false;
+
+        protected static UInt32 serial = 1;
 
         public IncludeDirectory(AbsoluteCrosspath path, IncludeDirectoryType type) : base(path) {
             Type = type;
@@ -16,8 +18,52 @@ namespace VcxProjLib {
             ++serial;
         }
 
+        protected static Int32 ConvertTypeToInt(IncludeDirectoryType type) {
+            switch (type) {
+                case IncludeDirectoryType.Quote: return 10;
+                case IncludeDirectoryType.Generic: return 20;
+                case IncludeDirectoryType.System: return 30;
+                case IncludeDirectoryType.DirAfter: return 40;
+
+                default: {
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns>-1 if this is lower than other; 0 if they are equal; 1 otherwise</returns>
+        public Int32 CompareTo(IncludeDirectory other) {
+            return ConvertTypeToInt(this.Type) - ConvertTypeToInt(other.Type);
+        }
+
+#if AGGREGATE_XPATH
+        public override String ToString() {
+            return xpath.ToString();
+        }
+
+        public void Rebase(AbsoluteCrosspath before, AbsoluteCrosspath after) {
+            xpath.Rebase(before, after);
+        }
+
+        public CrosspathFlavor Flavor {
+            get { return xpath.Flavor; }
+        }
+#endif
+
+        public String GetLocalProjectPath(AbsoluteCrosspath solutionDir) {
+            if (autoDownloaded) {
+                return $@"$(SolutionDir)\{this.Relativize(solutionDir, true)}";
+            }
+
+            return this.ToString();
+        }
+
         public void RebaseToLocal(RemoteHost remote, AbsoluteCrosspath localXpath) {
-            if (Flavor == CrosspathFlavor.Windows) {
+            if (this.Flavor == CrosspathFlavor.Windows) {
                 return;
             }
 
@@ -32,7 +78,7 @@ namespace VcxProjLib {
             String localIncludeDirectory = xLocalIncludeDirectory.ToString();
             String localFilename = localXpath.Appended(RelativeCrosspath.FromString(localFilenamePattern)).ToString();
             Logger.WriteLine(LogLevel.Info, $"Rolling ${this} into {localFilenamePattern}...");
-            if (remote.Execute($"pushd {this} && zip -6 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
+            if (remote.Execute($"pushd {this} && zip -1 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
                 Logger.WriteLine(LogLevel.Error, result);
                 return;
             }
@@ -40,7 +86,7 @@ namespace VcxProjLib {
             Directory.CreateDirectory(localXpath.ToString());
             remote.DownloadFile(remoteFilename, localFilename);
             Directory.CreateDirectory(localIncludeDirectory);
-            File.WriteAllText(xLocalIncludeDirectory.Appended(RelativeCrosspath.FromString("origin.txt")).ToString(), this.ToString());
+            File.WriteAllText(xLocalIncludeDirectory.Appended(RelativeCrosspath.FromString($@"..\{ShortName}_origin.txt")).ToString(), this.ToString());
 
             // not working bcz of NTFS case & special names restrictions. extract manually.
             //ZipFile.ExtractToDirectory(localFilename, localDirectory, Encoding.UTF8);
@@ -67,19 +113,25 @@ namespace VcxProjLib {
                     }
 
                     String dirname = new AbsoluteCrosspath(xPath).ToContainingDirectory().ToString();
-                    Directory.CreateDirectory(dirname);
-                    // packed file
-                    using (FileStream xfs = new FileStream(path, FileMode.CreateNew)) {
-                        using (Stream zas = zaEntry.Open()) {
-                            while (true) {
-                                int len = zas.Read(zipExtractBuf, 0, xtractBufSize);
-                                if (len == 0) {
-                                    // EOF
-                                    break;
+                    try {
+                        Directory.CreateDirectory(dirname);
+                        // packed file
+                        using (FileStream xfs = new FileStream(path, FileMode.CreateNew)) {
+                            using (Stream zas = zaEntry.Open()) {
+                                while (true) {
+                                    int len = zas.Read(zipExtractBuf, 0, xtractBufSize);
+                                    if (len == 0) {
+                                        // EOF
+                                        break;
+                                    }
+
+                                    xfs.Write(zipExtractBuf, 0, len);
                                 }
-                                xfs.Write(zipExtractBuf, 0, len);
                             }
                         }
+                    }
+                    catch (Exception e) {
+                        Logger.WriteLine(LogLevel.Error, $"Could not extract '${zaEntry.FullName}': ${e.Message}");
                     }
                 }
             }
@@ -90,6 +142,7 @@ namespace VcxProjLib {
 
             // since we definitely have a local copy of include directory, rebase on it
             this.Rebase(this, xLocalIncludeDirectory);
+            autoDownloaded = true;
         }
     }
 }

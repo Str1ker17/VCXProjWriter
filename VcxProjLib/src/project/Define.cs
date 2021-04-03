@@ -5,6 +5,8 @@ namespace VcxProjLib {
         public static readonly Char[] Separator = {'='};
         public static readonly String DefaultValue = "";
 
+        public static DefineExactComparer ExactComparer = new DefineExactComparer();
+
         public Define(String name, String value) {
             Name = name;
             Value = value;

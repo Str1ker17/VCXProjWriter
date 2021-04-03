@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using CrosspathLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VcxProjLib;
 
@@ -23,7 +23,7 @@ namespace VcxProjUnitTests {
         public void PrintGCCPredefinedMacrosAtOnce() {
             RemoteHost remote = InitRemoteHost();
             remote.PrepareForConnection();
-            int rv = remote.Execute("gcc -E -dM - < /dev/null", out String result);
+            int rv = remote.Execute("gcc -E -dM - < /dev/null", out String _);
             Assert.AreEqual(0, rv);
         }
 
@@ -31,7 +31,7 @@ namespace VcxProjUnitTests {
         public void PrintGCCIncludeDirectoriesAtOnce() {
             RemoteHost remote = InitRemoteHost();
             remote.PrepareForConnection();
-            int rv = remote.Execute("gcc -E -Wp,-v - < /dev/null", out String result);
+            int rv = remote.Execute("gcc -E -Wp,-v - < /dev/null", out String _);
             Assert.AreEqual(0, rv);
         }
 
@@ -39,7 +39,7 @@ namespace VcxProjUnitTests {
         public void PrintGCCIncludeDirectoriesCppAtOnce() {
             RemoteHost remote = InitRemoteHost();
             remote.PrepareForConnection();
-            int rv = remote.Execute("gcc -x c++ -c -Wp,-v - < /dev/null", out String result);
+            int rv = remote.Execute("touch /tmp/VCXProjWriterUT.c && g++ -c -Wp,-v /tmp/VCXProjWriterUT.c", out String _);
             Assert.AreEqual(0, rv);
         }
 
@@ -87,6 +87,7 @@ namespace VcxProjUnitTests {
             Assert.AreEqual("INCLUDE_L3=YES", def4.ToString());
         }
 
+#if LEGACY
         [TestMethod]
         public void DefineComparer() {
             Define def1 = new Define("INCLUDE_L3");
@@ -100,11 +101,43 @@ namespace VcxProjUnitTests {
             Assert.AreEqual(1, hs1.Count);
             Assert.AreEqual(2, hs2.Count);
         }
+#endif
 
         [TestMethod]
         public void IncludeDirsOrder() {
-            PriorityQueue<IncludeDirectory> includeDirs = new PriorityQueue<IncludeDirectory>();
-            Assert.Fail("TODO");
+            IncludeDirectoryList includeDirs = new IncludeDirectoryList();
+
+            IncludeDirectory[] expected = {
+                new IncludeDirectory(AbsoluteCrosspath.FromString("/opt/qemu-5.3/inc/private"), IncludeDirectoryType.Quote)
+              , new IncludeDirectory(AbsoluteCrosspath.FromString("/opt/qemu-5.3/hw/mips/include"), IncludeDirectoryType.Generic)
+              , new IncludeDirectory(AbsoluteCrosspath.FromString("/opt/qemu-5.3/hw/mips"), IncludeDirectoryType.Generic)
+              , new IncludeDirectory(AbsoluteCrosspath.FromString("/opt/qemu-5.3/inc"), IncludeDirectoryType.System)
+
+              , new IncludeDirectory(AbsoluteCrosspath.FromString("/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include"), IncludeDirectoryType.System)
+              , new IncludeDirectory(AbsoluteCrosspath.FromString("/usr/local/include"), IncludeDirectoryType.System)
+              , new IncludeDirectory(AbsoluteCrosspath.FromString("/usr/include"), IncludeDirectoryType.System)
+
+              , new IncludeDirectory(AbsoluteCrosspath.FromString("/opt/qemu-5.3-helper/if-a-compiler-didnt-handle/include"), IncludeDirectoryType.DirAfter)
+            };
+
+            // a tricky project
+            includeDirs.AddIncludeDirectory(expected[3]); /* /opt/qemu-5.3/inc */
+            includeDirs.AddIncludeDirectory(expected[0]); /* /opt/qemu-5.3/inc/private */
+            includeDirs.AddIncludeDirectory(expected[0]); /* /opt/qemu-5.3/inc/private */ // intentional duplicate
+            includeDirs.AddIncludeDirectory(expected[7]); /* /opt/qemu-5.3-helper/if-a-compiler-didnt-handle/include */
+            includeDirs.AddIncludeDirectory(expected[1]); /* /opt/qemu-5.3/hw/mips/include */
+            includeDirs.AddIncludeDirectory(expected[2]); /* /opt/qemu-5.3/hw/mips */
+            // compiler should go after the project
+            includeDirs.AddIncludeDirectory(expected[4]); /* /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include */
+            includeDirs.AddIncludeDirectory(expected[5]); /* /usr/local/include */
+            includeDirs.AddIncludeDirectory(expected[6]); /* /usr/include */
+
+
+            int idx = 0;
+            foreach (IncludeDirectory includeDirectory in includeDirs) {
+                Assert.AreEqual(expected[idx], includeDirectory);
+                ++idx;
+            }
         }
     }
 }

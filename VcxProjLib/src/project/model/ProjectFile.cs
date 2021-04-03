@@ -4,46 +4,67 @@ using CrosspathLib;
 
 namespace VcxProjLib {
     public class ProjectFile {
-        protected static DefineNameOnlyComparer defineNameOnlyComparerInstance = new DefineNameOnlyComparer();
-
+        /// <summary>
+        /// Project file is a source file, which has a path.
+        /// </summary>
         public AbsoluteCrosspath FilePath { get; }
-        public Compiler Compiler { get; }
-        public HashSet<AbsoluteCrosspath> IncludeDirectories { get; }
-        public HashSet<Define> Defines { get; }
 
-        // generate compiledb with --full-path for this to work
+        // these properties are only valuable when grouping project files; do we need them inside the ProjectFile?
+        public Compiler Compiler { get; }
+        public IncludeDirectoryList IncludeDirectories { get; }
+        public Dictionary<String, Define> Defines { get; }
+        public HashSet<Define> SetOfDefines { get; }
+
+        // generate compiledb with '--full-path' for this to work
         public ProjectFile(AbsoluteCrosspath filePath, Compiler compiler) {
-            IncludeDirectories = new HashSet<AbsoluteCrosspath>();
+            IncludeDirectories = new IncludeDirectoryList();
             Compiler = compiler;
-            Defines = new HashSet<Define>(defineNameOnlyComparerInstance);
+            Defines = new Dictionary<String, Define>();
+            SetOfDefines = new HashSet<Define>(Define.ExactComparer);
             FilePath = filePath;
         }
 
-        public Boolean AddIncludeDir(AbsoluteCrosspath includeDir) {
-            return IncludeDirectories.Add(includeDir);
+        public void AddIncludeDir(IncludeDirectory includeDir) {
+            // TODO: preserve include directories order
+            IncludeDirectories.AddIncludeDirectory(includeDir);
         }
 
-        public Boolean Define(String defineString) {
+        /// <summary>
+        /// Apply a preprocessor define to a single source file.
+        /// </summary>
+        /// <param name="defineString">The whole define string without "-D",
+        /// for instance, "_FORTIFY_SOURCE=2" or "FEATURE_WANTED".</param>
+        public void SetCppDefine(String defineString) {
             Define newDefine = new Define(defineString);
-            if (Defines.Contains(newDefine)) {
-                Logger.WriteLine(LogLevel.Warning, $"'{newDefine.Name}' redefined to '{newDefine.Value}'");
-                Defines.Remove(newDefine);
+            if (Defines.ContainsKey(newDefine.Name)) {
+                Define oldDefine = Defines[newDefine.Name];
+                if (oldDefine.Value != newDefine.Value) {
+                    Logger.WriteLine(LogLevel.Warning, $"'{newDefine.Name}' redefined from '' to '{newDefine.Value}'");
+                }
+                SetOfDefines.Remove(oldDefine);
             }
 
-            return Defines.Add(newDefine);
+            Defines[newDefine.Name] = newDefine;
+            SetOfDefines.Add(newDefine);
         }
 
-        public Boolean Undefine(String undefineString) {
-            return Defines.Remove(new Define(undefineString, VcxProjLib.Define.DefaultValue));
+        public void UnsetCppDefine(String undefineString) {
+            if (!Defines.ContainsKey(undefineString)) {
+                return;
+            }
+
+            Define defineForRemoval = Defines[undefineString];
+            SetOfDefines.Remove(defineForRemoval);
+            Defines.Remove(undefineString);
         }
 
         public void DumpData() {
-            foreach (AbsoluteCrosspath inc in IncludeDirectories) {
+            foreach (IncludeDirectory inc in IncludeDirectories) {
                 Console.WriteLine("-I{0}", inc);
             }
 
-            foreach (Define def in Defines) {
-                if (def.Value == "")
+            foreach (Define def in Defines.Values) {
+                if (def.Value == Define.DefaultValue)
                     Console.WriteLine("-D{0}", def.Name);
                 else
                     Console.WriteLine("-D{0}={1}", def.Name, def.Value);
@@ -56,13 +77,13 @@ namespace VcxProjLib {
         /// </summary>
         /// <returns></returns>
         public Int64 HashProjectID() {
-            Int64 hashIn = string.Empty.GetHashCode();
-            foreach (var inc in IncludeDirectories) {
+            Int64 hashIn = String.Empty.GetHashCode();
+            foreach (IncludeDirectory inc in IncludeDirectories) {
                 hashIn += inc.GetHashCode();
             }
 
-            foreach (var def in Defines) {
-                hashIn += def.Name.GetHashCode() + def.Value.GetHashCode();
+            foreach (Define def in Defines.Values) {
+                hashIn += ((Int64)(def.Name.GetHashCode() + def.Value.GetHashCode())) << 32;
             }
 
             return hashIn;

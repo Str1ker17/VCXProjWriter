@@ -19,7 +19,7 @@ namespace CrosspathLib {
         public Char WindowsRootDrive { get; protected set; }
         public String LastEntry { get { return directories.Last.Value; } }
 
-        protected LinkedList<String> directories;
+        internal LinkedList<String> directories;
 
         // we have to process all possible conditions:
         // relative and absolute paths;

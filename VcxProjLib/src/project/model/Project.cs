@@ -10,58 +10,78 @@ namespace VcxProjLib {
         public String Name { get; set; }
 
         public String Filename {
-            // ReSharper disable once ArrangeAccessorOwnerBody
             get {
                 return String.Format(SolutionStructure.ProjectFilePathFormat, Name);
             }
         }
 
+        /// <summary>
+        /// Do not mix compilers together in a single project since the compiler
+        /// carry its specific built-in defines and standard include directories.
+        /// </summary>
         public Compiler Compiler { get; }
 
         /// <summary>
         /// Not only extra include directories, but system too.
         /// PRESERVE ORDER
         /// </summary>
-        public HashSet<AbsoluteCrosspath> IncludeDirectories { get; }
+        public IncludeDirectoryList IncludeDirectories { get; }
 
         /// <summary>
-        /// Undefines form defines, removing item from then.
-        /// Does not require to preserve order.
+        /// The project in VS shares a common set of preprocessor macros.
+        /// Does not require to preserve order since we are processing command-line defines ourselves,
+        /// producing out only a 'clean' set of defines with their final values.
         /// </summary>
         public HashSet<Define> Defines { get; }
 
-        public Dictionary<String, ProjectFile> ProjectFiles { get; }
+        /// <summary>
+        /// Project is a set of source files.
+        /// Does not require to preserve order.
+        /// </summary>
+        public HashSet<ProjectFile> ProjectFiles { get; }
 
 
-        public Project(Guid guid, String name, Compiler compiler, HashSet<AbsoluteCrosspath> includeDirectories, HashSet<Define> defines) {
+        public Project(Guid guid, String name, Compiler compiler, IncludeDirectoryList includeDirectories, HashSet<Define> defines) {
             Guid = guid;
             Name = name;
             Compiler = compiler;
-            // create copies, not references
-            IncludeDirectories = new HashSet<AbsoluteCrosspath>(includeDirectories);
-            Defines = new HashSet<Define>(defines, new DefineExactComparer());
+            // copy references
+            IncludeDirectories = includeDirectories;
+            Defines = defines;
             // initialize an empty set
-            ProjectFiles = new Dictionary<String, ProjectFile>();
+            ProjectFiles = new HashSet<ProjectFile>();
         }
 
         public Boolean AddProjectFile(ProjectFile pf) {
-            if (ProjectFiles.ContainsKey(pf.FilePath.ToAbsolutizedString())) {
+            if (ProjectFiles.Contains(pf)) {
+                // TODO: maybe the build system is dumb and recompiles the same file multiple times?
                 return false;
             }
 
-            ProjectFiles.Add(pf.FilePath.ToAbsolutizedString(), pf);
+            ProjectFiles.Add(pf);
             return true;
         }
 
         public Boolean TestWhetherProjectFileBelongs(ProjectFile pf) {
             // TODO: allow relax if some defines are absent in one of sets
-            return ((Compiler.ExePath == pf.Compiler.ExePath) 
-                  && IncludeDirectories.SetEquals(pf.IncludeDirectories)
-                  && Defines.SetEquals(pf.Defines));
+            if (Compiler.ExePath != pf.Compiler.ExePath) {
+                return false;
+            }
+
+            if (!IncludeDirectories.ListIdentical(pf.IncludeDirectories)) {
+                return false;
+            }
+
+            if (!Defines.SetEquals(pf.SetOfDefines)) {
+                return false;
+            }
+
+            return true;
         }
 
-        public void WriteToFile() {
+        public void WriteToFile(AbsoluteCrosspath solutionDir) {
             String inheritFrom;
+            // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
             if (Compiler.HaveAdditionalInfo) {
                 inheritFrom = $@"$(SolutionDir)\{Compiler.PropsFileName}";
             }
@@ -104,8 +124,8 @@ namespace VcxProjLib {
 
             XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
             // TODO: intermix project include directories with compiler include directories
-            foreach (AbsoluteCrosspath includePath in IncludeDirectories) {
-                projectIncludePaths.InnerText += includePath + ";";
+            foreach (IncludeDirectory includePath in IncludeDirectories) {
+                projectIncludePaths.InnerText += includePath.GetLocalProjectPath(solutionDir) + ";";
             }
             projectIncludePaths.InnerText += "$(NMakeIncludeSearchPath)";
             projectPropertyGroupIDU.AppendChild(projectIncludePaths);
@@ -127,11 +147,19 @@ namespace VcxProjLib {
             // source file list
             XmlElement projectItemGroupCompiles = doc.CreateElement("ItemGroup");
             projectItemGroupCompiles.SetAttribute("Label", "Source Files");
-            foreach (ProjectFile projectFile in this.ProjectFiles.Values) {
+            foreach (ProjectFile projectFile in this.ProjectFiles) {
                 XmlElement projectFileXmlElement = doc.CreateElement("ClCompile");
                 projectFileXmlElement.SetAttribute("Include", projectFile.FilePath.ToAbsolutizedString());
                 projectItemGroupCompiles.AppendChild(projectFileXmlElement);
             }
+
+            // add local_compat.h and local_post_compiler_compat.h
+            XmlElement projectFileLocalCompatXmlElement = doc.CreateElement("ClCompile");
+            projectFileLocalCompatXmlElement.SetAttribute("Include", "local_compat.h");
+            projectItemGroupCompiles.AppendChild(projectFileLocalCompatXmlElement);
+            XmlElement projectFileLocalPostCompatXmlElement = doc.CreateElement("ClCompile");
+            projectFileLocalPostCompatXmlElement.SetAttribute("Include", "local_post_compiler_compat.h");
+            projectItemGroupCompiles.AppendChild(projectFileLocalPostCompatXmlElement);
 
             projectNode.AppendChild(projectItemGroupCompiles);
 
