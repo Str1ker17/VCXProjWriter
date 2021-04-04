@@ -10,7 +10,7 @@ namespace VcxProjLib {
         public AbsoluteCrosspath FilePath { get; }
 
         // these properties are only valuable when grouping project files; do we need them inside the ProjectFile?
-        public Compiler Compiler { get; }
+        public Compiler CompilerOfFile { get; }
         public IncludeDirectoryList IncludeDirectories { get; }
         public Dictionary<String, Define> Defines { get; }
         public HashSet<Define> SetOfDefines { get; }
@@ -18,7 +18,7 @@ namespace VcxProjLib {
         // generate compiledb with '--full-path' for this to work
         public ProjectFile(AbsoluteCrosspath filePath, Compiler compiler) {
             IncludeDirectories = new IncludeDirectoryList();
-            Compiler = compiler;
+            CompilerOfFile = compiler;
             Defines = new Dictionary<String, Define>();
             SetOfDefines = new HashSet<Define>(Define.ExactComparer);
             FilePath = filePath;
@@ -82,6 +82,8 @@ namespace VcxProjLib {
                 hashIn += inc.GetHashCode();
             }
 
+            hashIn += CompilerOfFile.GetHashCode();
+
             foreach (Define def in Defines.Values) {
                 hashIn += ((Int64)(def.Name.GetHashCode() + def.Value.GetHashCode())) << 32;
             }
@@ -90,7 +92,7 @@ namespace VcxProjLib {
         }
 
         public override String ToString() {
-            return $"{Compiler.ExePath} {FilePath}";
+            return $"{CompilerOfFile.ExePath} {FilePath}";
         }
     }
 }

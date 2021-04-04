@@ -105,11 +105,11 @@ namespace VcxProjLib {
                 // we can't assume whether compilerPath is absolute or relative;
                 // it's possible to enforce compiledb's '--full-path' but I prefer to stay somewhat
                 // backwards-compatible.
-                String compilerPath = entry.arguments[0];
+                Crosspath compilerPath = Crosspath.FromString(entry.arguments[0]);
                 AbsoluteCrosspath workingDir = AbsoluteCrosspath.FromString(entry.directory);
                 Compiler compiler = null;
                 foreach (Compiler solutionCompiler in solutionCompilers) {
-                    if (solutionCompiler.ExePath == compilerPath) {
+                    if (solutionCompiler.ExePath.Equals(compilerPath)) {
                         // already registered
                         compiler = solutionCompiler;
                     }

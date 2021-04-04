@@ -64,7 +64,7 @@ namespace VcxProjLib {
 
         public Boolean TestWhetherProjectFileBelongs(ProjectFile pf) {
             // TODO: allow relax if some defines are absent in one of sets
-            if (Compiler.ExePath != pf.Compiler.ExePath) {
+            if (Compiler.ExePath != pf.CompilerOfFile.ExePath) {
                 return false;
             }
 

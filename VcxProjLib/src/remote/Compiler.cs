@@ -11,7 +11,7 @@ namespace VcxProjLib {
     /// RemoteHost have a reference to Compiler, and Compiler does not reference anything.
     /// </summary>
     public class Compiler {
-        public String ExePath { get; }
+        public Crosspath ExePath { get; }
         public String ShortName { get; }
         public String Version { get; protected set; }
         public String PropsFileName { get { return String.Format(SolutionStructure.CompilerPropsFileFormat, ShortName); } }
@@ -28,9 +28,9 @@ namespace VcxProjLib {
         protected static readonly Char[] LineEndingsChar = {'\n', '\r'};
         public static readonly String RemoteTempFile = "/tmp/VCXProjWriter.c";
 
-        public Compiler(String path) {
-            ExePath = path;
-            ShortName = Crosspath.FromString(path).LastEntry;
+        public Compiler(Crosspath path) {
+            ExePath = path; // warning saves reference
+            ShortName = ExePath.LastEntry;
             IncludeDirectories = new List<IncludeDirectory>();
             Defines = new HashSet<Define>(); // TODO: add comparer
         }
@@ -65,9 +65,10 @@ namespace VcxProjLib {
                 throw new ApplicationException("could not extract include dirs from compiler");
             }
 
-            AbsoluteCrosspath xpwd = Crosspath.FromString(pwd.TrimEnd(LineEndingsChar)) as AbsoluteCrosspath;
-            if (Crosspath.FromString(absExePath.TrimEnd(LineEndingsChar)) is AbsoluteCrosspath xCompilerPath && xCompilerPath.ToString() != ExePath) {
-                Logger.WriteLine(LogLevel.Info, $"compiler '{ExePath}' actually located at '{xCompilerPath}'");
+            AbsoluteCrosspath xpwd = AbsoluteCrosspath.FromString(pwd.TrimEnd(LineEndingsChar));
+            AbsoluteCrosspath xcompiler = AbsoluteCrosspath.FromString(absExePath.TrimEnd(LineEndingsChar));
+            if (!xcompiler.Equals(ExePath)) {
+                Logger.WriteLine(LogLevel.Info, $"compiler '{ExePath}' actually located at '{xcompiler}'");
             }
             Version = version.TrimEnd(LineEndingsChar);
 
