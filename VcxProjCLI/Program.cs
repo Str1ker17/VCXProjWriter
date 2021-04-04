@@ -50,31 +50,38 @@ namespace VcxProjCLI {
                         ++idx;
                         break;
 
+                    case "--relax-include-dirs-order":
+                        Solution.internalConfiguration.RelaxIncludeDirsOrder = true;
+                        break;
+
                     case "--debug":
                         Logger.Level = LogLevel.Debug;
                         break;
 
                     case "--help":
-                        Console.WriteLine("VCXProjWriter v0.2.0");
-                        Console.WriteLine("Copyleft (c) Str1ker, 2020-2021");
-                        Console.WriteLine();
-                        Console.WriteLine("Usage:");
-                        Console.WriteLine("-s, --substitute-path BEFORE=AFTER");
-                        Console.WriteLine("        replace all source/header paths that start with BEFORE to AFTER.");
-                        Console.WriteLine("        You definitely want this when editing Linux project on Windows.");
-                        Console.WriteLine("-o, --output-dir DIR");
+                        Console.WriteLine( "VCXProjWriter v0.2.0");
+                        Console.WriteLine( "Copyleft (c) Str1ker, 2020-2021");
+                        Console.WriteLine( );
+                        Console.WriteLine( "Usage:");
+                        Console.WriteLine( "-s, --substitute-path BEFORE=AFTER");
+                        Console.WriteLine( "        replace all source/header paths that start with BEFORE to AFTER.");
+                        Console.WriteLine( "        You definitely want this when editing Linux project on Windows.");
+                        Console.WriteLine( "-o, --output-dir DIR");
                         Console.WriteLine($"        put solution to DIR directory. Default is '{config.Outdir}'.");
-                        Console.WriteLine("-f, --file FILE");
+                        Console.WriteLine( "-f, --file FILE");
                         Console.WriteLine($"        read compilation database from FILE. Default is '{config.InputFile}'");
-                        Console.WriteLine("        The compilation database file should conform to compiledb \"arguments\" format.");
-                        Console.WriteLine("        More about it: https://github.com/nickdiego/compiledb");
-                        Console.WriteLine("-r, --remote");
-                        Console.WriteLine("        PrepareForConnection to remote system via SSH and collect information");
-                        Console.WriteLine("        from compiler for more precise project generation");
-                        Console.WriteLine("--debug");
-                        Console.WriteLine("        print lots of debugging information.");
-                        Console.WriteLine("--help");
-                        Console.WriteLine("        print this help message.");
+                        Console.WriteLine( "        The compilation database file should conform to compiledb \"arguments\" format.");
+                        Console.WriteLine( "        More about it: https://github.com/nickdiego/compiledb");
+                        Console.WriteLine( "-r, --remote");
+                        Console.WriteLine( "        connect to remote system via SSH and collect information");
+                        Console.WriteLine( "        from compiler(s) for more precise project generation");
+                        Console.WriteLine( "--relax-include-dirs-order");
+                        Console.WriteLine( "        allow to group together files with the same include");
+                        Console.WriteLine( "        directories list but different order of them");
+                        Console.WriteLine( "--debug");
+                        Console.WriteLine( "        print lots of debugging information.");
+                        Console.WriteLine( "--help");
+                        Console.WriteLine( "        print this help message.");
                         return;
 
                     default:

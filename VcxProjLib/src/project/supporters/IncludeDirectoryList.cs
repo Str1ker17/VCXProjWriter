@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace VcxProjLib {
     public class IncludeDirectoryList : IEnumerable<IncludeDirectory> {
@@ -68,12 +69,38 @@ namespace VcxProjLib {
                             return false;
                         }
 
-                        if (enumeratorThis.Current != enumeratorOther.Current) {
+                        Debug.Assert(enumeratorThis.Current != null, "enumeratorThis.Current != null");
+                        if (!ReferenceEquals(enumeratorThis.Current, enumeratorOther.Current)) {
                             return false;
                         }
                     }
                 }
             }
+        }
+
+        public Boolean ListIdenticalRelaxOrder(IncludeDirectoryList other) {
+            // this is N^2, watch out
+            List<IncludeDirectory> theirsList = new List<IncludeDirectory>(other);
+            foreach (IncludeDirectory includeDirectory in this) {
+                Boolean found = false;
+                for (int i = 0; i < theirsList.Count; ++i) {
+                    if (includeDirectory.Equals(theirsList[i])) {
+                        found = true;
+                        theirsList.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    return false;
+                }
+            }
+
+            if (theirsList.Count != 0) {
+                return false;
+            }
+
+            return true;
         }
     }
 }

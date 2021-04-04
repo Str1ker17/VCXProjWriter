@@ -1,17 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace CrosspathLib {
     public class RelativeCrosspath : Crosspath {
+        /// <summary>
+        /// A relative path differs from absolute in a way that a relative path
+        /// is relative to something, i.e. it depends on a working directory.
+        /// </summary>
+        public AbsoluteCrosspath WorkingDirectory { get; protected set; }
+
         protected internal static RelativeCrosspath CreateInstance() {
             return new RelativeCrosspath();
         }
 
         protected RelativeCrosspath() {
         }
-
-        public AbsoluteCrosspath WorkingDirectory { get; protected set; }
 
         /// <summary>
         /// Creates a copy of instance.
@@ -22,10 +25,6 @@ namespace CrosspathLib {
         }
 
         public void SetWorkingDirectory(AbsoluteCrosspath workdir) {
-            //if (workdir.Origin != CrosspathOrigin.Absolute) {
-            //    throw new ArgumentOutOfRangeException(nameof(workdir), "should be absolute");
-            //}
-
             this.WorkingDirectory = workdir;
         }
 
@@ -55,12 +54,11 @@ namespace CrosspathLib {
         }
 
         public override String ToString() {
-            // filter out .. and .
+            // the .. and . are already filtered out on the creation stage, i.e. inside Chdir()
             if (directories.Count == 0) {
                 return ".";
             }
 
-            // we need to inverse stack before output
             StringBuilder sb = new StringBuilder();
             foreach (String dir in directories) {
                 sb.Append(dir);
@@ -82,8 +80,7 @@ namespace CrosspathLib {
 
         public override String ToAbsolutizedString() {
             if (WorkingDirectory is null) {
-                throw new PolymorphismException(
-                        "attempt to absolutize RelativePath without a WorkingDirectory");
+                throw new PolymorphismException("attempt to absolutize RelativePath without a WorkingDirectory");
             }
 
             return new AbsoluteCrosspath(WorkingDirectory).Append(this).ToString();

@@ -62,6 +62,9 @@ namespace VcxProjLib {
             _connectionInfo = new PasswordConnectionInfo(_host, _port, _username, _password);
             _sshClientConnection = new SshClient(_connectionInfo) {
                     KeepAliveInterval = TimeSpan.FromSeconds(15)
+                  , ConnectionInfo = {
+                            Timeout = TimeSpan.FromMinutes(1)
+                    }
             };
             _sftpClientConnection = new SftpClient(_connectionInfo);
         }
@@ -76,7 +79,6 @@ namespace VcxProjLib {
             }
 
             using (SshCommand sshcmd = _sshClientConnection.CreateCommand(cmd)) {
-                sshcmd.CommandTimeout = TimeSpan.FromSeconds(15);
                 result = sshcmd.Execute();
                 Logger.WriteLine(LogLevel.Debug, $"run {cmd} on {this}, exit code = {sshcmd.ExitStatus}");
                 return sshcmd.ExitStatus;

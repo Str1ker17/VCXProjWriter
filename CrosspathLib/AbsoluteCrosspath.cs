@@ -20,6 +20,7 @@ namespace CrosspathLib {
         /// </summary>
         /// <param name="source">Source AbsoluteCrosspath object, which will remain untouched.</param>
         public AbsoluteCrosspath(AbsoluteCrosspath source) : base(source) {
+            // no new fields are introduced
         }
 
         /// <summary>
@@ -49,10 +50,20 @@ namespace CrosspathLib {
             return AbsoluteCrosspath.FromString(pwd);
         }
 
+        /// <summary>
+        /// Appends a relative part to the path.
+        /// </summary>
+        /// <param name="part">Path to append.</param>
+        /// <returns>Modified self object.</returns>
         public new AbsoluteCrosspath Append(RelativeCrosspath part) {
             return base.Append(part) as AbsoluteCrosspath;
         }
 
+        /// <summary>
+        /// Creates a copy of AbsoluteCrosspath object, appended with another part.
+        /// </summary>
+        /// <param name="part">Path to append.</param>
+        /// <returns>New AbsoluteCrosspath object, appended with part.</returns>
         public AbsoluteCrosspath Appended(RelativeCrosspath part) {
             return new AbsoluteCrosspath(this).Append(part);
         }
@@ -61,7 +72,7 @@ namespace CrosspathLib {
         /// Removes last entry if exists and returns self.
         /// This is useful to get containing directory.
         /// </summary>
-        /// <returns>Modified self object</returns>
+        /// <returns>Modified self object.</returns>
         public new virtual AbsoluteCrosspath ToContainingDirectory() {
             return base.ToContainingDirectory() as AbsoluteCrosspath;
         }
@@ -124,9 +135,6 @@ namespace CrosspathLib {
                 return this;
             }
 
-            if (directories.Count == 0) {
-            }
-
             Boolean cantRebase = false;
             using (var myIter = directories.GetEnumerator()) {
                 using (var theirsIter = oldBase.directories.GetEnumerator()) {
@@ -172,7 +180,7 @@ namespace CrosspathLib {
             return this;
         }
 
-        public RelativeCrosspath Relativize(AbsoluteCrosspath workingDir, Boolean dontGoOut = false) {
+        public RelativeCrosspath Relativized(AbsoluteCrosspath workingDir, Boolean dontGoOut = false) {
             return RelativeCrosspath.CreateRelativePath(this, workingDir, dontGoOut);
         }
     }

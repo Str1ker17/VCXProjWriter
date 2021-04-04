@@ -15,6 +15,10 @@ namespace VcxProjLib {
               , {IncludeDirectoryType.DirAfter, "-idirafter"}
             };
 
+        public static InternalConfiguration internalConfiguration = new InternalConfiguration {
+            RelaxIncludeDirsOrder = false
+        };
+
         /// <summary>
         /// The unique identifier of solution in terms of VS.
         /// </summary>

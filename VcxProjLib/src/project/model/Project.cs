@@ -68,8 +68,15 @@ namespace VcxProjLib {
                 return false;
             }
 
-            if (!IncludeDirectories.ListIdentical(pf.IncludeDirectories)) {
-                return false;
+            if (Solution.internalConfiguration.RelaxIncludeDirsOrder) {
+                if (!IncludeDirectories.ListIdenticalRelaxOrder(pf.IncludeDirectories)) {
+                    return false;
+                }
+            }
+            else {
+                if (!IncludeDirectories.ListIdentical(pf.IncludeDirectories)) {
+                    return false;
+                }
             }
 
             if (!Defines.SetEquals(pf.SetOfDefines)) {
@@ -124,16 +131,27 @@ namespace VcxProjLib {
 
             XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
             // TODO: intermix project include directories with compiler include directories
+            // in the project file
             foreach (IncludeDirectory includePath in IncludeDirectories) {
+                // append -idirafter to the very end, below compiler dirs
+                if (includePath.Type == IncludeDirectoryType.DirAfter) {
+                    continue;
+                }
                 projectIncludePaths.InnerText += includePath.GetLocalProjectPath(solutionDir) + ";";
             }
             projectIncludePaths.InnerText += "$(NMakeIncludeSearchPath)";
+            foreach (IncludeDirectory includePath in IncludeDirectories) {
+                // append -idirafter to the very end, below compiler dirs
+                if (includePath.Type == IncludeDirectoryType.DirAfter) {
+                    projectIncludePaths.InnerText += ";" + includePath.GetLocalProjectPath(solutionDir);
+                }
+            }
             projectPropertyGroupIDU.AppendChild(projectIncludePaths);
 
             // maybe someday this will be helpful, but now it can be inherited from Solution.props
             XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             // TODO: add compiler compat header to forced includes
-            projectForcedIncludes.InnerText = $@"{compatLocal};$(NMakeForcedIncludes);{compatLocalPost}";
+            projectForcedIncludes.InnerText = $@"$(ProjectDir)\{compatLocal};$(NMakeForcedIncludes);$(ProjectDir)\{compatLocalPost}";
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
 
             XmlElement projectDefines = doc.CreateElement("NMakePreprocessorDefinitions");

@@ -56,12 +56,17 @@ namespace VcxProjLib {
 
         public String GetLocalProjectPath(AbsoluteCrosspath solutionDir) {
             if (autoDownloaded) {
-                return $@"$(SolutionDir)\{this.Relativize(solutionDir, true)}";
+                return $@"$(SolutionDir)\{this.Relativized(solutionDir, true)}";
             }
 
             return this.ToString();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="remote">Remote host to download from</param>
+        /// <param name="localXpath">Local directory for remote include directories, e.g. D:\Project1\remote\192.168.0.1.</param>
         public void RebaseToLocal(RemoteHost remote, AbsoluteCrosspath localXpath) {
             if (this.Flavor == CrosspathFlavor.Windows) {
                 return;
@@ -83,9 +88,8 @@ namespace VcxProjLib {
                 return;
             }
 
-            Directory.CreateDirectory(localXpath.ToString());
-            remote.DownloadFile(remoteFilename, localFilename);
             Directory.CreateDirectory(localIncludeDirectory);
+            remote.DownloadFile(remoteFilename, localFilename);
             File.WriteAllText(xLocalIncludeDirectory.Appended(RelativeCrosspath.FromString($@"..\{ShortName}_origin.txt")).ToString(), this.ToString());
 
             // not working bcz of NTFS case & special names restrictions. extract manually.

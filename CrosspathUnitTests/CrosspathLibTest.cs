@@ -208,7 +208,7 @@ namespace CrosspathUnitTests {
         public void RelativizeTest1() {
             AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu");
             AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu/hw/mips/serial.c");
-            RelativeCrosspath relPath = xFile.Relativize(xIncludeDirectory);
+            RelativeCrosspath relPath = xFile.Relativized(xIncludeDirectory);
             Assert.AreEqual("hw/mips/serial.c", relPath.ToString());
         }
 
@@ -216,7 +216,7 @@ namespace CrosspathUnitTests {
         public void RelativizeTest2() {
             AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu");
             AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString("/local/store/fast/bin-src/ccache/ccache.c");
-            RelativeCrosspath relPath = xFile.Relativize(xIncludeDirectory);
+            RelativeCrosspath relPath = xFile.Relativized(xIncludeDirectory);
             Assert.AreEqual("../../fast/bin-src/ccache/ccache.c", relPath.ToString());
         }
 
@@ -225,7 +225,7 @@ namespace CrosspathUnitTests {
             AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString("/local/store/bin-src/qemu");
             AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString("/local/store/fast/bin-src/ccache/ccache.c");
             try {
-                RelativeCrosspath unused = xFile.Relativize(xIncludeDirectory, true);
+                RelativeCrosspath unused = xFile.Relativized(xIncludeDirectory, true);
                 Assert.Fail("should fail");
             }
             catch (CrosspathLibException) {
@@ -237,7 +237,7 @@ namespace CrosspathUnitTests {
         public void RelativizeTestWin1() {
             AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString(@"C:\Windows\system32\config");
             AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString(@"C:\Program Files (x86)\Common Files\Microsoft");
-            RelativeCrosspath relPath = xFile.Relativize(xIncludeDirectory);
+            RelativeCrosspath relPath = xFile.Relativized(xIncludeDirectory);
             Assert.AreEqual(@"..\..\..\Program Files (x86)\Common Files\Microsoft", relPath.ToString());
         }
 
@@ -246,7 +246,7 @@ namespace CrosspathUnitTests {
             AbsoluteCrosspath xIncludeDirectory = AbsoluteCrosspath.FromString(@"C:\Windows\system32\config");
             AbsoluteCrosspath xFile = AbsoluteCrosspath.FromString(@"D:\Games\Call of Duty 2");
             try {
-                RelativeCrosspath unused = xFile.Relativize(xIncludeDirectory);
+                RelativeCrosspath unused = xFile.Relativized(xIncludeDirectory);
                 Assert.Fail("should fail");
             }
             catch {

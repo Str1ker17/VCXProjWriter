@@ -26,7 +26,9 @@ namespace CrosspathLib {
         // Windows and Unix paths.
         // also we need some flavor-agnostic internal format to store paths
 
-        // ReSharper disable once UnusedMember.Global
+        /// <summary>
+        /// This constructor is hidden from the outside of classes
+        /// </summary>
         protected Crosspath() {
         }
 
@@ -60,32 +62,29 @@ namespace CrosspathLib {
                 return;
             }
 
+            // TODO: support also UNC paths, like \\192.168.0.1\share
+
             origin = CrosspathOrigin.Relative;
 
             // fast check
-            //bool has_forward_slash = false;
             foreach (Char c in path) {
                 if (c == '\\') {
                     // assume for now that Unix paths do not contain backslashes
                     flavor = CrosspathFlavor.Windows;
                     return;
                 }
-
-                //if (path[pos] == '/') {
-                //    has_forward_slash = true;
-                //}
             }
 
-            //if (has_forward_slash) {
-            //    this.Flavor = CrosspathFlavor.FlavorUnix;
-            //}
-            //else {
-            //    this.Flavor = CrosspathFlavor.Compatible;
-            //}
-            // keep it simple instead
+            // keep it simple
             flavor = CrosspathFlavor.Unix;
         }
 
+        /// <summary>
+        /// Create a generic Crosspath object, which is actually an
+        /// AbsoluteCrosspath or RelativeCrosspath depending on the input string.
+        /// </summary>
+        /// <param name="path">Any path string.</param>
+        /// <returns>Crosspath object.</returns>
         public static Crosspath FromString(String path) {
             DetectParams(path, out CrosspathOrigin origin, out CrosspathFlavor flavor, out Char rootDrive);
             Crosspath xpath;
@@ -129,34 +128,34 @@ namespace CrosspathLib {
         }
 
         /// <summary>
-        /// 
+        /// Change directory for a single named path component.
         /// </summary>
         /// <param name="dir">A single dir component.</param>
         protected void Chdir(String dir) {
             if (dir == ".")
                 return;
             if (dir == "..") {
-                if (directories.Count > 0) {
-                    if (directories.Last.Value == "..") {
-                        if (Origin == CrosspathOrigin.Relative) {
-                            directories.AddLast(dir);
-                            return;
-                        }
-                    }
-                    // this is the main code branch
-                    directories.RemoveLast();
-                    return;
-                }
-                else {
+                if (directories.Count == 0) {
                     if (Origin == CrosspathOrigin.Absolute) {
                         throw new CrosspathLibException("attempt to go out of absolute path");
                     }
 
-                    // TODO: handle out-of-tree paths more precisely
+                    // DONE: handle out-of-tree paths more precisely
                     // allow putting ".." to the beginning of relative paths
                     directories.AddLast(dir);
                     return;
                 }
+
+                if (directories.Last.Value == "..") {
+                    if (Origin == CrosspathOrigin.Relative) {
+                        directories.AddLast(dir);
+                        return;
+                    }
+                }
+
+                // this is the main code branch
+                directories.RemoveLast();
+                return;
             }
 
             directories.AddLast(dir);
@@ -183,10 +182,14 @@ namespace CrosspathLib {
             return this;
         }
 
+        /// <summary>
+        /// A generic API to get an absolute path of any Crosspath object.
+        /// </summary>
+        /// <returns>Absolute string; otherwise exception.</returns>
         public abstract String ToAbsolutizedString();
 
         public override String ToString() {
-            throw new NotImplementedException("this class is not stringizable");
+            return $"(generic crosspath of {directories.Count} dirs)";
         }
 
         /// <summary>
