@@ -1,10 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using CrosspathLib;
 
 namespace VcxProjLib {
     public class IncludeDirectory : AbsoluteCrosspath, IComparable<IncludeDirectory> {
+        public static readonly Dictionary<IncludeDirectoryType, String> IncludeParam =
+                new Dictionary<IncludeDirectoryType, String> {
+                        { IncludeDirectoryType.Generic, "-I" }
+                      , { IncludeDirectoryType.Quote, "-iquote" }
+                      , { IncludeDirectoryType.System, "-isystem" }
+                      , { IncludeDirectoryType.DirAfter, "-idirafter" }
+                };
+
         public IncludeDirectoryType Type { get; }
         public String ShortName { get; }
 

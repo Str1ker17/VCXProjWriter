@@ -31,6 +31,11 @@ namespace VcxProjLib {
         public List<Tuple<AbsoluteCrosspath, AbsoluteCrosspath>> Substitutions { get; private set; }
         public RemoteHost Remote { get; private set; }
 
+        // encapsulation sucks sometimes
+        public AbsoluteCrosspath BaseDir;
+        public List<Crosspath> IncludeFilesFrom;
+        public List<Crosspath> ExcludeFilesFrom;
+
         protected Configuration() {
             Substitutions = new List<Tuple<AbsoluteCrosspath, AbsoluteCrosspath>>();
             Remote = null;

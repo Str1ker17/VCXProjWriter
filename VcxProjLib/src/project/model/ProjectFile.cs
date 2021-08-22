@@ -9,19 +9,37 @@ namespace VcxProjLib {
         /// </summary>
         public AbsoluteCrosspath FilePath { get; }
 
+        /// <summary>
+        /// Project files are created in context of solution, so there's a link to owner.
+        /// </summary>
+        protected Solution OwnerSolution { get; }
+
+        public RelativeCrosspath ProjectFolder { get; }
+
         // these properties are only valuable when grouping project files; do we need them inside the ProjectFile?
         public Compiler CompilerOfFile { get; }
         public IncludeDirectoryList IncludeDirectories { get; }
+        public Boolean DoNotUseStandardIncludeDirectories { get; }
         public Dictionary<String, Define> Defines { get; }
         public HashSet<Define> SetOfDefines { get; }
+        public HashSet<AbsoluteCrosspath> ForceIncludes { get; }
 
         // generate compiledb with '--full-path' for this to work
-        public ProjectFile(AbsoluteCrosspath filePath, Compiler compiler) {
-            IncludeDirectories = new IncludeDirectoryList();
+        public ProjectFile(Solution sln, AbsoluteCrosspath filePath, Compiler compiler) {
             CompilerOfFile = compiler;
+            IncludeDirectories = new IncludeDirectoryList();
+            DoNotUseStandardIncludeDirectories = false;
             Defines = new Dictionary<String, Define>();
             SetOfDefines = new HashSet<Define>(Define.ExactComparer);
+            ForceIncludes = new HashSet<AbsoluteCrosspath>();
             FilePath = filePath;
+            OwnerSolution = sln;
+            try {
+                ProjectFolder = RelativeCrosspath.CreateRelativePath(filePath, sln.BaseDir, true);
+            }
+            catch {
+                // do not assign any folder
+            }
         }
 
         public void AddIncludeDir(IncludeDirectory includeDir) {
@@ -93,6 +111,95 @@ namespace VcxProjLib {
 
         public override String ToString() {
             return $"{CompilerOfFile.ExePath} {FilePath}";
+        }
+
+        protected static String TakeArg(List<String> args, ref int idx) {
+            if ((idx + 1) >= args.Count) {
+                if (idx < args.Count) {
+                    throw new ApplicationException($"option '{args[idx]}' requires an argument");
+                }
+                throw new ApplicationException("TakeArg failed");
+            }
+
+            ++idx;
+            return args[idx];
+        }
+
+        protected static bool TakeParamValue(List<String> args, ref int idx, String param, out String value) {
+            if (!args[idx].StartsWith(param)) {
+                value = null;
+                return false;
+            }
+
+            // first try to cut current arg to process form of "-DLINUX"
+            String defineString = args[idx].Substring("-D".Length);
+            // if it gave no info, take the whole next arg to process form of "-D LINUX"
+            if (defineString.Length == 0) {
+                defineString = TakeArg(args, ref idx);
+            }
+
+            value = defineString;
+            return true;
+        }
+
+        public void AddInfoFromCommandLine(AbsoluteCrosspath workingDir, List<String> args) {
+            // parse arguments to obtain all -I, -D, -U
+            // start from 1 to skip compiler name
+            for (Int32 i = 1; i < args.Count; i++) {
+                // includes:
+                // -I
+                // -iquote
+                // -isystem
+                // -idirafter
+                // ..., see https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html
+                // TODO: also process -nostdinc to control whether system include dirs should be added or not.
+                // TODO: preserve priority between -I, -iquote and other include dir types
+                IncludeDirectoryType idt = IncludeDirectoryType.Null;
+                String includeDirStr = String.Empty;
+                foreach (IncludeDirectoryType idk in IncludeDirectory.IncludeParam.Keys) {
+                    if (TakeParamValue(args, ref i, IncludeDirectory.IncludeParam[idk], out includeDirStr)) {
+                        idt = idk;
+                        break;
+                    }
+                }
+
+                if (idt != IncludeDirectoryType.Null) {
+                    // DONE: determine more accurately which include is local and which is remote
+                    // this is done with the use of Solution.Rebase() so we customly point to local files
+                    AbsoluteCrosspath includeDirPath = AbsoluteCrosspath.FromString(includeDirStr, workingDir);
+                    IncludeDirectory includeDir = OwnerSolution.TrackIncludeDirectory(includeDirPath, idt);
+
+                    // relax if we're adding the same include directory twice
+                    // TODO: rewrite this using PriorityQueue to preserver order
+                    this.AddIncludeDir(includeDir);
+
+                    continue;
+                }
+
+                // defines:
+                // -D
+                if (TakeParamValue(args, ref i, "-D", out String defineString)) {
+                    this.SetCppDefine(defineString);
+                    Logger.WriteLine(LogLevel.Trace, $"[i] Added -D{defineString}");
+                    continue;
+                }
+
+                // undefines:
+                // -U
+                if (TakeParamValue(args, ref i, "-U", out String undefineString)) {
+                    this.UnsetCppDefine(undefineString);
+                    Logger.WriteLine(LogLevel.Trace, $"[i] Added -U{undefineString}");
+                    continue;
+                }
+
+                if (TakeParamValue(args, ref i, "-include", out String forceInclude)) {
+                    AbsoluteCrosspath forceIncludePath = AbsoluteCrosspath.FromString(forceInclude, workingDir);
+                    this.ForceIncludes.Add(forceIncludePath);
+                    this.OwnerSolution.TrackFile(new ProjectFile(OwnerSolution, forceIncludePath, this.CompilerOfFile), true);
+                    // ReSharper disable once RedundantJumpStatement
+                    continue;
+                }
+            }
         }
     }
 }

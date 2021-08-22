@@ -47,8 +47,8 @@ namespace VcxProjLib {
         /// <returns></returns>
         public Int32 CompareTo(Object obj) {
             if(obj == null) return Int32.MaxValue;
-            if(!(obj is Define)) return Int32.MaxValue;
-            return String.Compare(this.Name, ((Define) obj).Name, StringComparison.Ordinal);
+            if(!(obj is Define define)) return Int32.MaxValue;
+            return String.Compare(this.Name, define.Name, StringComparison.Ordinal);
         }
     }
 }

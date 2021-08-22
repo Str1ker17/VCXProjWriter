@@ -9,12 +9,24 @@ namespace VcxProjCLI {
     internal class Program {
         internal static Configuration config = Configuration.Default();
 
+        private static String TakeArg(String[] args, ref int idx) {
+            if ((idx + 1) >= args.Length) {
+                if (idx < args.Length) {
+                    throw new ApplicationException($"option '{args[idx]}' requires an argument");
+                }
+                throw new ApplicationException("TakeArg failed");
+            }
+
+            ++idx;
+            return args[idx];
+        }
+
         private static void ProcessArgs(String[] args) {
             for (int idx = 0; idx < args.Length; idx++) {
                 switch (args[idx]) {
                     case "-s":
                     case "--substitute-path":
-                        String[] subst = args[idx + 1].Split(new[] {'='}, 2);
+                        String[] subst = TakeArg(args, ref idx).Split(new[] {'='}, 2);
                         if (subst.Length != 2) {
                             throw new ApplicationException("--substitute-path requires next arg to be like '/path/before=/path/after'");
                         }
@@ -28,26 +40,35 @@ namespace VcxProjCLI {
                             }
                         }
                         config.Substitutions.Add(new Tuple<AbsoluteCrosspath, AbsoluteCrosspath>(pair[0], pair[1]));
-                        ++idx;
+                        break;
+
+                    case "-b":
+                    case "--base-dir":
+                        config.BaseDir = AbsoluteCrosspath.FromString(TakeArg(args, ref idx));
+                        break;
+
+                    case "--include":
+                        config.IncludeFilesFrom.Add(Crosspath.FromString(TakeArg(args, ref idx)));
+                        break;
+
+                    case "--exclude":
+                        config.ExcludeFilesFrom.Add(Crosspath.FromString(TakeArg(args, ref idx)));
                         break;
 
                     case "-o":
                     case "--output-dir":
-                        config.Outdir = args[idx + 1];
-                        ++idx;
+                        config.Outdir = TakeArg(args, ref idx);
                         break;
 
                     case "-f":
                     case "--file":
-                        config.InputFile = args[idx + 1];
-                        ++idx;
+                        config.InputFile = TakeArg(args, ref idx);
                         break;
 
                     case "-r":
                     case "--remote":
-                        RemoteHost remote = RemoteHost.Parse(args[idx + 1]);
+                        RemoteHost remote = RemoteHost.Parse(TakeArg(args, ref idx));
                         config.AssignRemote(remote);
-                        ++idx;
                         break;
 
                     case "--relax-include-dirs-order":
@@ -99,7 +120,8 @@ namespace VcxProjCLI {
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                Solution sln = Solution.CreateSolutionFromCompileDB(config.InputFile);
+                Solution sln = new Solution(config);
+                sln.ParseCompileDB(config.InputFile);
                 sw.Stop();
                 Int64 parseAndGroup = sw.ElapsedMilliseconds;
 

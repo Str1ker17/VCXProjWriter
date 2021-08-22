@@ -6,6 +6,9 @@ using CrosspathLib;
 
 namespace VcxProjLib {
     public class Project {
+        protected static int nextProjectId = 1;
+
+        public int ProjectSerial { get; }
         public Guid Guid { get; }
         public String Name { get; set; }
 
@@ -35,21 +38,32 @@ namespace VcxProjLib {
         public HashSet<Define> Defines { get; }
 
         /// <summary>
+        /// The build system can enforce inclusion by the '-include' param
+        /// and this is a precise code analyze dependency and a distinguisher factor too.
+        /// </summary>
+        public HashSet<AbsoluteCrosspath> ForcedIncludes { get; }
+
+        /// <summary>
         /// Project is a set of source files.
         /// Does not require to preserve order.
         /// </summary>
         public HashSet<ProjectFile> ProjectFiles { get; }
 
+        public HashSet<RelativeCrosspath> ProjectFilters { get; }
 
-        public Project(Guid guid, String name, Compiler compiler, IncludeDirectoryList includeDirectories, HashSet<Define> defines) {
+        public Project(Guid guid, Compiler compiler, IncludeDirectoryList includeDirectories
+                     , HashSet<Define> defines, HashSet<AbsoluteCrosspath> forcedIncludes) {
+            ProjectSerial = nextProjectId++;
             Guid = guid;
-            Name = name;
+            Name = $"Project_{ProjectSerial:D4}";
             Compiler = compiler;
             // copy references
             IncludeDirectories = includeDirectories;
             Defines = defines;
+            ForcedIncludes = forcedIncludes;
             // initialize an empty set
             ProjectFiles = new HashSet<ProjectFile>();
+            ProjectFilters = new HashSet<RelativeCrosspath>();
         }
 
         public Boolean AddProjectFile(ProjectFile pf) {
@@ -130,7 +144,7 @@ namespace VcxProjLib {
             XmlElement projectPropertyGroupIDU = doc.CreateElement("PropertyGroup");
 
             XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
-            // TODO: intermix project include directories with compiler include directories
+            // DONE?: intermix project include directories with compiler include directories
             // in the project file
             foreach (IncludeDirectory includePath in IncludeDirectories) {
                 // append -idirafter to the very end, below compiler dirs
@@ -151,7 +165,7 @@ namespace VcxProjLib {
             // maybe someday this will be helpful, but now it can be inherited from Solution.props
             XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             // TODO: add compiler compat header to forced includes
-            projectForcedIncludes.InnerText = $@"$(ProjectDir)\{compatLocal};$(NMakeForcedIncludes);$(ProjectDir)\{compatLocalPost}";
+            projectForcedIncludes.InnerText = $@"$(ProjectDir)\{compatLocal};$(SolutionPreCompilerCompat);$(CompilerCompat);$(SolutionPostCompilerCompat);$(ProjectDir)\{compatLocalPost}";
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
 
             XmlElement projectDefines = doc.CreateElement("NMakePreprocessorDefinitions");
@@ -195,6 +209,47 @@ namespace VcxProjLib {
 
             doc.AppendChild(projectNode);
             doc.Save(this.Filename);
+
+            WriteStructureToFile();
+        }
+
+        protected void WriteStructureToFile() {
+            XmlDocument doc = new XmlDocument();
+            doc.AppendChild(doc.CreateXmlDeclaration("1.0", "utf-8", null));
+
+            XmlElement projectNode = doc.CreateElement("Project");
+            projectNode.SetAttribute("DefaultTargets", "Build");
+            projectNode.SetAttribute("ToolsVersion", "4.0");
+            projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
+
+            XmlElement projectFolders = doc.CreateElement("ItemGroup");
+            foreach (RelativeCrosspath relativeCrosspath in ProjectFilters) {
+                XmlElement projectFolder = doc.CreateElement("Filter");
+                projectFolder.SetAttribute("Include", relativeCrosspath.ToString());
+                XmlElement projectFolderId = doc.CreateElement("UniqueIdentifier");
+                projectFolderId.InnerText = Solution.AllocateGuid().ToString();
+                projectFolder.AppendChild(projectFolderId);
+                projectFolders.AppendChild(projectFolder);
+            }
+            projectNode.AppendChild(projectFolders);
+
+            XmlElement projectFiles = doc.CreateElement("ItemGroup");
+            foreach (ProjectFile pf in ProjectFiles) {
+                if (pf.ProjectFolder == null) {
+                    continue;
+                }
+
+                XmlElement projectFile = doc.CreateElement("ClCompile");
+                projectFile.SetAttribute("Include", pf.FilePath.ToString());
+                XmlElement projectFileFolder = doc.CreateElement("Filter");
+                projectFileFolder.InnerText = pf.ProjectFolder.ToString();
+                projectFile.AppendChild(projectFileFolder);
+                projectFiles.AppendChild(projectFile);
+            }
+            projectNode.AppendChild(projectFiles);
+
+            doc.AppendChild(projectNode);
+            doc.Save($"{this.Filename}.filters");
         }
     }
 }

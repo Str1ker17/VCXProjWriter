@@ -35,10 +35,14 @@
     <RemoteRootDir>/tmp/VCXProjWriter</RemoteRootDir>
   </PropertyGroup>
   <PropertyGroup>
+    <!-- this is custom property to avoid duplicates -->
+    <SolutionPreCompilerCompat>$(SolutionDir)\solution_compat.h</SolutionPreCompilerCompat>
+    <CompilerCompat><!-- overriden in compiler file if exists --></CompilerCompat>
+    <SolutionPostCompilerCompat>$(SolutionDir)\solution_post_compiler_compat.h</SolutionPostCompilerCompat>
     <NMakeIncludeSearchPath>$(ProjectDir)\include</NMakeIncludeSearchPath>
-    <NMakeForcedIncludes>$(SolutionDir)\solution_compat.h;$(SolutionCompilerCompat);$(SolutionDir)\solution_post_compiler_compat.h</NMakeForcedIncludes>
+    <NMakeForcedIncludes><!-- overriden in project file --></NMakeForcedIncludes>
     <NMakePreprocessorDefinitions>VCXPROJWRITER</NMakePreprocessorDefinitions>
-    <AdditionalOptions>/UVCXPROJWRITER</AdditionalOptions>
+    <AdditionalOptions>/UVCXPROJWRITER0</AdditionalOptions>
     <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>
     <BuildCommandLine>false</BuildCommandLine>
     <ReBuildCommandLine>false</ReBuildCommandLine>
@@ -64,12 +68,12 @@
   <ImportGroup Label="ExtensionTargets" />
   <!-- https://habr.com/ru/post/448216/#comment_21649044 -->
   <PropertyGroup Label="Output Folders">
-    <BuildDirSuffix>$(Configuration).$(Platform)\</BuildDirSuffix>
-    <BaseIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</IntermediateOutputPath>
-    <DesignTimeIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)\InProcessTempFiles</DesignTimeIntermediateOutputPath>
-    <MSBuildProjectExtensionsPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)</MSBuildProjectExtensionsPath>
-    <OutDir>$(SolutionDir)\build\$(Platform).$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\intermediate\$(Platform).$(Configuration)\</IntDir>
+    <BuildDirSuffix>$(Platform).$(Configuration)\</BuildDirSuffix>
+    <BaseIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)\</IntermediateOutputPath>
+    <DesignTimeIntermediateOutputPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)\InProcessTempFiles\</DesignTimeIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(SolutionDir)\intermediate\$(BuildDirSuffix)\</MSBuildProjectExtensionsPath>
+    <OutDir>$(SolutionDir)\build\$(BuildDirSuffix)\</OutDir>
+    <IntDir>$(SolutionDir)\intermediate\$(BuildDirSuffix)\</IntDir>
   </PropertyGroup>
 </Project>

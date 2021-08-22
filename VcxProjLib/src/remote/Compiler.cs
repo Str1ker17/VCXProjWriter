@@ -213,5 +213,13 @@ End of search list.
             if (!(obj is Compiler)) return false;
             return ExePath == ((Compiler) obj).ExePath;
         }
+
+        /// <summary>
+        /// Parse generic compiler argument, i.e. extract value of parameter.
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseCommandLineArgument() {
+            return false;
+        }
     }
 }
