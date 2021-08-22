@@ -198,6 +198,11 @@ End of search list.
             projectForcedIncludes.InnerText = $@"$(SolutionDir)\solution_compat.h;$(SolutionDir)\{CompilerCompatHeaderPath};$(SolutionDir)\solution_post_compiler_compat.h";
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
 
+            XmlElement compilerForcedIncludes = doc.CreateElement("CompilerCompat");
+            // DONE: add compiler compat header to forced includes
+            compilerForcedIncludes.InnerText = $@"$(SolutionDir)\{CompilerCompatHeaderPath}";
+            projectPropertyGroupIDU.AppendChild(compilerForcedIncludes);
+
             projectNode.AppendChild(projectPropertyGroupIDU);
 
             doc.AppendChild(projectNode);
@@ -210,8 +215,8 @@ End of search list.
 
         public override Boolean Equals(Object obj) {
             if (obj == null) return false;
-            if (!(obj is Compiler)) return false;
-            return ExePath == ((Compiler) obj).ExePath;
+            if (!(obj is Compiler compiler)) return false;
+            return ExePath == compiler.ExePath;
         }
 
         /// <summary>

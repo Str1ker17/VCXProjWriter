@@ -22,7 +22,7 @@ namespace VcxProjLib {
         protected Dictionary<Int64, Project> projects;
 
         /// <summary>
-        /// The directory in which most source files will be looked up for project structure.
+        /// The (remote) directory in which most source files will be looked up for project structure.
         /// The rest will be placed to the special "External sources" folder.
         /// </summary>
         public AbsoluteCrosspath BaseDir { get; }
@@ -36,7 +36,7 @@ namespace VcxProjLib {
         // TODO: use collection comparator instead to distinguish between same/different dirs
         // remember that solutionIncludeDirectories is provided for convenience of rebasing
         // but it does NOT need to be sorted and/or preserve order. go to Project for this
-        // !force includes are tracked as solution files too!
+        // force includes are tracked as solution files too!
         protected HashSet<ProjectFile> solutionFiles;
         protected HashSet<Compiler> solutionCompilers;
         protected Dictionary<String, IncludeDirectory> solutionIncludeDirectories;
@@ -82,12 +82,10 @@ namespace VcxProjLib {
             foreach (KeyValuePair<String, IncludeDirectory> includeDirPair in solutionIncludeDirectories) {
                 includeDirPair.Value.Rebase(before, after);
             }
-            
-            //foreach (var project in Projects) {
-            //    foreach (AbsoluteCrosspath includeDir in project.Value.IncludeDirectories) {
-            //        includeDir.Rebase(before, after);
-            //    }
-            //}
+
+            if (BaseDir != null) {
+                BaseDir.Rebase(before, after);
+            }
         }
 
         public ProjectFile TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
@@ -259,15 +257,7 @@ namespace VcxProjLib {
 
             // TODO: add them as "Solution Items"
             File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionCompat, @"#pragma once");
-            File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionPostCompat, @"
-#pragma once
-#undef _WIN32
-#undef _MSC_VER
-#undef _MSC_FULL_VER
-#undef _MSC_BUILD
-#undef _MSC_EXTENSIONS
-#define VCXPROJWRITER
-");
+            File.WriteAllText(SolutionStructure.ForcedIncludes.SolutionPostCompat, templates.SolutionCompat);
 
             // regarding compiler_compat.h:
             // generate one file per compiler and reference them from projects

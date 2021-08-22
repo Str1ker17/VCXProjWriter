@@ -30,6 +30,11 @@ namespace VcxProjLib {
                 return;
             }
 
+            foreach (IncludeDirectory incDir in includeDirectoryArray[index]) {
+                if (incDir.ToString() == includeDir.ToString()) {
+                    return;
+                }
+            }
             includeDirectoryArray[index].Add(includeDir);
         }
 

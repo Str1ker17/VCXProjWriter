@@ -49,7 +49,7 @@ namespace VcxProjLib {
         /// </summary>
         public HashSet<ProjectFile> ProjectFiles { get; }
 
-        public HashSet<RelativeCrosspath> ProjectFilters { get; }
+        public HashSet<String> ProjectFilters { get; }
 
         public Project(Guid guid, Compiler compiler, IncludeDirectoryList includeDirectories
                      , HashSet<Define> defines, HashSet<AbsoluteCrosspath> forcedIncludes) {
@@ -63,7 +63,7 @@ namespace VcxProjLib {
             ForcedIncludes = forcedIncludes;
             // initialize an empty set
             ProjectFiles = new HashSet<ProjectFile>();
-            ProjectFilters = new HashSet<RelativeCrosspath>();
+            ProjectFilters = new HashSet<String>();
         }
 
         public Boolean AddProjectFile(ProjectFile pf) {
@@ -73,12 +73,32 @@ namespace VcxProjLib {
             }
 
             ProjectFiles.Add(pf);
+
+            if (pf.ProjectFolder != null) {
+                // create project structure
+                RelativeCrosspath projectFolder = new RelativeCrosspath(pf.ProjectFolder);
+                Stack<String> todo = new Stack<String>();
+                while (true) {
+                    String fldr = projectFolder.ToString().Replace('/', '\\');
+                    if (fldr == "." || ProjectFilters.Contains(fldr)) {
+                        break;
+                    }
+
+                    todo.Push(fldr);
+                    projectFolder.ToContainingDirectory();
+                }
+
+                foreach (String filter in todo) {
+                    ProjectFilters.Add(filter);
+                }
+            }
+
             return true;
         }
 
         public Boolean TestWhetherProjectFileBelongs(ProjectFile pf) {
             // TODO: allow relax if some defines are absent in one of sets
-            if (Compiler.ExePath != pf.CompilerOfFile.ExePath) {
+            if (!Compiler.ExePath.Equals(pf.CompilerOfFile.ExePath)) {
                 return false;
             }
 
@@ -223,9 +243,9 @@ namespace VcxProjLib {
             projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
 
             XmlElement projectFolders = doc.CreateElement("ItemGroup");
-            foreach (RelativeCrosspath relativeCrosspath in ProjectFilters) {
+            foreach (String filter in ProjectFilters) {
                 XmlElement projectFolder = doc.CreateElement("Filter");
-                projectFolder.SetAttribute("Include", relativeCrosspath.ToString());
+                projectFolder.SetAttribute("Include", filter);
                 XmlElement projectFolderId = doc.CreateElement("UniqueIdentifier");
                 projectFolderId.InnerText = Solution.AllocateGuid().ToString();
                 projectFolder.AppendChild(projectFolderId);
@@ -242,7 +262,7 @@ namespace VcxProjLib {
                 XmlElement projectFile = doc.CreateElement("ClCompile");
                 projectFile.SetAttribute("Include", pf.FilePath.ToString());
                 XmlElement projectFileFolder = doc.CreateElement("Filter");
-                projectFileFolder.InnerText = pf.ProjectFolder.ToString();
+                projectFileFolder.InnerText = pf.ProjectFolder.ToString().Replace('/', '\\');
                 projectFile.AppendChild(projectFileFolder);
                 projectFiles.AppendChild(projectFile);
             }

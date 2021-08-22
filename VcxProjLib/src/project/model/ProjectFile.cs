@@ -35,10 +35,11 @@ namespace VcxProjLib {
             FilePath = filePath;
             OwnerSolution = sln;
             try {
-                ProjectFolder = RelativeCrosspath.CreateRelativePath(filePath, sln.BaseDir, true);
+                ProjectFolder = RelativeCrosspath.CreateRelativePath(filePath, sln.BaseDir, true).ToContainingDirectory() as RelativeCrosspath;
             }
             catch {
                 // do not assign any folder
+                ProjectFolder = null;
             }
         }
 
@@ -126,13 +127,13 @@ namespace VcxProjLib {
         }
 
         protected static bool TakeParamValue(List<String> args, ref int idx, String param, out String value) {
-            if (!args[idx].StartsWith(param)) {
+            if (!(args[idx].StartsWith(param))) {
                 value = null;
                 return false;
             }
 
             // first try to cut current arg to process form of "-DLINUX"
-            String defineString = args[idx].Substring("-D".Length);
+            String defineString = args[idx].Substring(param.Length);
             // if it gave no info, take the whole next arg to process form of "-D LINUX"
             if (defineString.Length == 0) {
                 defineString = TakeArg(args, ref idx);

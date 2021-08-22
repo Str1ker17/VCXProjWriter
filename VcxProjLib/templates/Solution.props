@@ -37,7 +37,7 @@
   <PropertyGroup>
     <!-- this is custom property to avoid duplicates -->
     <SolutionPreCompilerCompat>$(SolutionDir)\solution_compat.h</SolutionPreCompilerCompat>
-    <CompilerCompat><!-- overriden in compiler file if exists --></CompilerCompat>
+    <CompilerCompat>;;<!-- overriden in compiler file if exists --></CompilerCompat>
     <SolutionPostCompilerCompat>$(SolutionDir)\solution_post_compiler_compat.h</SolutionPostCompilerCompat>
     <NMakeIncludeSearchPath>$(ProjectDir)\include</NMakeIncludeSearchPath>
     <NMakeForcedIncludes><!-- overriden in project file --></NMakeForcedIncludes>
