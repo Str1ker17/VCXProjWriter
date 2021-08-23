@@ -82,9 +82,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="templates\Project2.vcxproj.filters" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\CrosspathLib\CrosspathLib.csproj">
       <Project>{BEB45228-C255-4B7C-92A1-D56FEE147533}</Project>
       <Name>CrosspathLib</Name>

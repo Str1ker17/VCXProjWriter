@@ -103,6 +103,7 @@ namespace VcxProjCLI {
                         Console.WriteLine( "        print lots of debugging information.");
                         Console.WriteLine( "--help");
                         Console.WriteLine( "        print this help message.");
+                        Environment.Exit(0);
                         return;
 
                     default:
