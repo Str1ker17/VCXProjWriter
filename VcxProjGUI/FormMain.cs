@@ -12,13 +12,9 @@ namespace VcxProjGUI {
         }
 
         private void doSomethingToolStripMenuItem_Click(object sender, System.EventArgs e) {
-            RemoteHost remote = new RemoteHost();
-            remote.Username = "striker";
-            remote.Password = "4040";
-            remote.Host = "192.168.75.20";
-            remote.Port = 22;
-            remote.Execute("echo 1", out String result);
-            MessageBox.Show(result);
+        }
+
+        private void openCompileDBToolStripMenuItem_Click(object sender, EventArgs e) {
         }
     }
 }

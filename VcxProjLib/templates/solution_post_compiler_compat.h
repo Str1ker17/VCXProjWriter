@@ -1,3 +1,5 @@
+/* Get the newest version from https://gist.github.com/Str1ker17/3addcd2c768bc96fd7c1487594eae582 */
+
 #pragma once
 
 /*

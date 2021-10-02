@@ -8,7 +8,7 @@ namespace VcxProjUnitTests {
     [TestClass]
     public class VcxProjLibUnitTests {
         private RemoteHost InitRemoteHost() {
-            return RemoteHost.Parse(File.ReadAllText(@"D:\VCXProjWriterRemote.txt"));
+            return RemoteHost.Parse(File.ReadAllText(@"C:\VCXProjWriterRemote.txt"));
         }
 
         [TestMethod]

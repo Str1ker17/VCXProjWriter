@@ -46,6 +46,8 @@ namespace VcxProjGUI
             this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
             this.debugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.doSomethingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.treeView1 = new System.Windows.Forms.TreeView();
+            this.propertyGrid1 = new System.Windows.Forms.PropertyGrid();
             this.MainMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -83,6 +85,7 @@ namespace VcxProjGUI
             this.openCompileDBToolStripMenuItem.Name = "openCompileDBToolStripMenuItem";
             this.openCompileDBToolStripMenuItem.Size = new System.Drawing.Size(213, 22);
             this.openCompileDBToolStripMenuItem.Text = "Open CompileDB...";
+            this.openCompileDBToolStripMenuItem.Click += new System.EventHandler(this.openCompileDBToolStripMenuItem_Click);
             // 
             // openConfigurationFileToolStripMenuItem
             // 
@@ -147,14 +150,14 @@ namespace VcxProjGUI
             // manageRemotesToolStripMenuItem
             // 
             this.manageRemotesToolStripMenuItem.Name = "manageRemotesToolStripMenuItem";
-            this.manageRemotesToolStripMenuItem.Size = new System.Drawing.Size(172, 22);
+            this.manageRemotesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.manageRemotesToolStripMenuItem.Text = "Manage remotes...";
             this.manageRemotesToolStripMenuItem.Click += new System.EventHandler(this.manageRemotesToolStripMenuItem_Click);
             // 
             // toolStripMenuItem4
             // 
             this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-            this.toolStripMenuItem4.Size = new System.Drawing.Size(169, 6);
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(177, 6);
             // 
             // debugToolStripMenuItem
             // 
@@ -167,15 +170,31 @@ namespace VcxProjGUI
             // doSomethingToolStripMenuItem
             // 
             this.doSomethingToolStripMenuItem.Name = "doSomethingToolStripMenuItem";
-            this.doSomethingToolStripMenuItem.Size = new System.Drawing.Size(149, 22);
+            this.doSomethingToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.doSomethingToolStripMenuItem.Text = "Do something";
             this.doSomethingToolStripMenuItem.Click += new System.EventHandler(this.doSomethingToolStripMenuItem_Click);
+            // 
+            // treeView1
+            // 
+            this.treeView1.Location = new System.Drawing.Point(12, 28);
+            this.treeView1.Name = "treeView1";
+            this.treeView1.Size = new System.Drawing.Size(569, 488);
+            this.treeView1.TabIndex = 1;
+            // 
+            // propertyGrid1
+            // 
+            this.propertyGrid1.Location = new System.Drawing.Point(589, 28);
+            this.propertyGrid1.Name = "propertyGrid1";
+            this.propertyGrid1.Size = new System.Drawing.Size(253, 488);
+            this.propertyGrid1.TabIndex = 2;
             // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(854, 528);
+            this.Controls.Add(this.propertyGrid1);
+            this.Controls.Add(this.treeView1);
             this.Controls.Add(this.MainMenu);
             this.MainMenuStrip = this.MainMenu;
             this.Name = "FormMain";
@@ -206,6 +225,8 @@ namespace VcxProjGUI
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem4;
         private System.Windows.Forms.ToolStripMenuItem debugToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem doSomethingToolStripMenuItem;
+        private System.Windows.Forms.TreeView treeView1;
+        private System.Windows.Forms.PropertyGrid propertyGrid1;
     }
 }
 
