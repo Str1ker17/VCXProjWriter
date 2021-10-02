@@ -24,14 +24,18 @@
 #define __extension__
 #define __attribute__(...)
 #define __attribute(...)
-#define __asm__
-#define __asm__(...)
-#define __asm
-#define __asm(...)
-#define asm
-#define asm(...)
-#define volatile(...)
-#define __volatile__(...)
+#define asm __asm__
+#define __asm __asm__
+
+#if !defined(typeof)
+#define __typeof__ int
+#define typeof __typeof__
+#define __typeof __typeof__
+#endif
+
+#ifndef container_of
+#define container_of(ptr, type, member) ((type*)(ptr))
+#endif
 
 /*
  * Builtins and so on
@@ -51,6 +55,8 @@
 #define __builtin_bswap32(value) ((((value >> 0) & 0xff) << 24) | (((value >> 8) & 0xff) << 16) | (((value >> 16) & 0xff) << 8) | (((value >> 24) & 0xff) << 0))
 
 #define __builtin_offsetof(t, m) ((__INTPTR_TYPE__)(&(((t*)0)->m)))
+
+#define __builtin_choose_expr(const_exp, exp1, exp2) ((const_exp) ? (exp1) : (exp2))
 
 //
 // Stubs; for example, dependent on typeof which still not supported. Or just lazy :)
