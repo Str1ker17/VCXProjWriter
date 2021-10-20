@@ -58,6 +58,8 @@
 
 #define __builtin_choose_expr(const_exp, exp1, exp2) ((const_exp) ? (exp1) : (exp2))
 
+#define atomic_store_rel_32(ptr, val) __atomic_store_n(ptr, val, 0)
+
 //
 // Stubs; for example, dependent on typeof which still not supported. Or just lazy :)
 //

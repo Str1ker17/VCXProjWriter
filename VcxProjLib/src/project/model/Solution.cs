@@ -275,7 +275,7 @@ namespace VcxProjLib {
                 sw.WriteLine("MinimumVisualStudioVersion = 10.0.40219.1");
                 foreach (Project project in projects.Values) {
                     // this magic GUID is "Windows (Visual C++)" project type
-                    sw.WriteLine($"Project(\"{{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}}\") = \"{project.Name}\", \"{project.Filename}\", \"{project.Guid}\"");
+                    sw.WriteLine($"Project(\"{{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}}\") = \"{project.Name}\", \"{project.Filename}\", \"{{{project.Guid.ToString().ToUpper()}}}\"");
                     sw.WriteLine("EndProject");
                 }
 
@@ -290,16 +290,16 @@ namespace VcxProjLib {
                 sw.WriteLine("Global");
                 sw.WriteLine("GlobalSection(SolutionConfigurationPlatforms) = preSolution");
                 foreach (String cfg in SolutionStructure.SolutionConfigurations) {
-                    sw.WriteLine($"\t\t{cfg} = {cfg}");
+                    sw.WriteLine($"\t\t{cfg}|{SolutionStructure.SolutionPlatformName} = {cfg}|{SolutionStructure.SolutionPlatformName}");
                 }
 
                 sw.WriteLine("EndGlobalSection");
                 sw.WriteLine("GlobalSection(ProjectConfigurationPlatforms) = postSolution");
-                String[] cfgStages = {"ActiveCfg", "Build.0", "Deploy.0"};
+                String[] cfgStages = { "ActiveCfg", "Build.0", "Deploy.0" };
                 foreach (Project project in projects.Values) {
                     foreach (String cfg in SolutionStructure.SolutionConfigurations) {
                         foreach (String cfgStage in cfgStages) {
-                            sw.WriteLine($"\t\t{{{project.Guid}}}.{cfg}.{cfgStage} = {cfg}");
+                            sw.WriteLine($"\t\t{{{project.Guid.ToString().ToUpper()}}}.{cfg}|{SolutionStructure.SolutionPlatformName}.{cfgStage} = {cfg}|{project.Compiler.VSPlatform}");
                         }
                     }
                 }

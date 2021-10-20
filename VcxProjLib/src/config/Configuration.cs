@@ -11,22 +11,11 @@ namespace VcxProjLib {
     /// </summary>
     [Serializable]
     public class Configuration {
-        private String _inputFile;
-        public String InputFile {
-            get { return _inputFile; }
-            set {
-                // TODO: be more restrictive
-                _inputFile = value;
-            }
-        }
-
-        private String _outdir;
-        public String Outdir {
-            get { return _outdir; }
-            set {
-                _outdir = value;
-            }
-        }
+        public String InputFile { get; set; }
+        public String Outdir { get; set; }
+        
+        public Boolean RandomizeOutdir { get; set; } = false;
+        public Boolean OpenSolution { get; set; } = false;
 
         public List<Tuple<AbsoluteCrosspath, AbsoluteCrosspath>> Substitutions { get; private set; }
         public RemoteHost Remote { get; private set; }
@@ -43,7 +32,7 @@ namespace VcxProjLib {
 
         public static Configuration Default() {
             return new Configuration {
-                    InputFile = "compile_commands.json"
+                    InputFile = null
                   , Outdir = "output"
             };
         }

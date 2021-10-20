@@ -7,9 +7,11 @@ namespace VcxProjLib {
         public static readonly String SolutionPropsFilename = @"Solution.props";
 
         public static readonly List<String> SolutionConfigurations = new List<String> {
-                @"Debug|x64"
-              , @"Release|x64"
+                "Debug"
+              , "Release"
         };
+
+        public static readonly String SolutionPlatformName = "Multiarch";
 
         public static readonly ForcedIncludesTemplate ForcedIncludes = new ForcedIncludesTemplate {
                 LocalCompat = @"{0}local_compat.h"

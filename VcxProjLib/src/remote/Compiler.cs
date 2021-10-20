@@ -23,6 +23,7 @@ namespace VcxProjLib {
         /// </summary>
         protected List<IncludeDirectory> IncludeDirectories { get; }
         protected HashSet<Define> Defines { get; }
+        public Platform VSPlatform = Platform.Unknown;
 
         protected static readonly String[] LineEndings = {"\r\n", "\n", "\r"};
         protected static readonly Char[] LineEndingsChar = {'\n', '\r'};
@@ -37,6 +38,7 @@ namespace VcxProjLib {
 
         /// <summary>
         /// Call RemoteHost.ExtractInfoFromCompiler() instead.
+        /// Requires these utilities on the remote system: pwd, echo, which, touch, sort, pushd, popd, zip
         /// </summary>
         /// <param name="remote">Remote host where compiler installed</param>
         public void ExtractAdditionalInfo(RemoteHost remote) {
@@ -57,7 +59,7 @@ namespace VcxProjLib {
                 throw new ApplicationException("could not create temporary file");
             }
 
-            if (remote.Execute($"{ExePath} -E -dM {RemoteTempFile}", out String defines) != RemoteHost.Success) {
+            if (remote.Execute($"{ExePath} -E -dM - < {RemoteTempFile} | sort", out String defines) != RemoteHost.Success) {
                 throw new ApplicationException("could not extract defines from compiler");
             }
 
@@ -73,10 +75,29 @@ namespace VcxProjLib {
             Version = version.TrimEnd(LineEndingsChar);
 
             Defines.Clear();
+            Platform fallbackPlatform = Platform.x64;
             foreach (String macro in defines.Split(LineEndings, StringSplitOptions.RemoveEmptyEntries)) {
                 // assuming standard format '#define MACRO some thing probably with spaces'
                 String[] defArray = macro.Split(new[] {' '}, 3);
+                // try to auto-detect the platform
+                if (VSPlatform == Platform.Unknown) {
+                    switch (defArray[1]) {
+                        case "__x86_64__": VSPlatform = Platform.x64; break;
+                        case "__i386__": VSPlatform = Platform.x86; break;
+                        case "__arm__": VSPlatform = Platform.ARM; break;
+                        case "__aarch64__": VSPlatform = Platform.ARM64; break;
+                        case "__mips__": VSPlatform = Platform.MIPS; break;
+                        case "__INTPTR_WIDTH__":
+                            if (Int32.Parse(defArray[2]) == 32) {
+                                fallbackPlatform = Platform.x86;
+                            }
+                            break;
+                    }
+                }
                 Defines.Add(new Define(defArray[1], defArray[2]));
+            }
+            if (VSPlatform == Platform.Unknown) {
+                VSPlatform = fallbackPlatform;
             }
 
             IncludeDirectories.Clear();
@@ -144,6 +165,8 @@ End of search list.
             }
 
             HaveAdditionalInfo = true;
+
+            Logger.WriteLine(LogLevel.Info, $"{absExePath} is {VSPlatform} compiler");
         }
 
         public void DownloadStandardIncludeDirectories(RemoteHost remote) {
@@ -180,6 +203,36 @@ End of search list.
             XmlElement projectImportProps = doc.CreateElement("Import");
             projectImportProps.SetAttribute("Project", @"$(SolutionDir)\Solution.props");
             projectNode.AppendChild(projectImportProps);
+
+            // Platform settings
+            /*
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+             */
+            XmlElement projectItemGroupPlatform = doc.CreateElement("ItemGroup");
+            projectItemGroupPlatform.SetAttribute("Label", "ProjectConfigurations");
+
+            foreach (String buildConfiguration in SolutionStructure.SolutionConfigurations) {
+                XmlElement projectPlatformConfiguration = doc.CreateElement("ProjectConfiguration");
+                projectPlatformConfiguration.SetAttribute("Include", $"{buildConfiguration}|{VSPlatform}");
+                XmlElement projectPlatformConfiguration_Configuration = doc.CreateElement("Configuration");
+                projectPlatformConfiguration_Configuration.InnerText = buildConfiguration;
+                projectPlatformConfiguration.AppendChild(projectPlatformConfiguration_Configuration);
+                XmlElement projectPlatformConfiguration_Platform = doc.CreateElement("Platform");
+                projectPlatformConfiguration_Platform.InnerText = VSPlatform.ToString();
+                projectPlatformConfiguration.AppendChild(projectPlatformConfiguration_Platform);
+                projectItemGroupPlatform.AppendChild(projectPlatformConfiguration);
+            }
+
+            projectNode.AppendChild(projectItemGroupPlatform);
 
             // IDU settings
             XmlElement projectPropertyGroupIDU = doc.CreateElement("PropertyGroup");

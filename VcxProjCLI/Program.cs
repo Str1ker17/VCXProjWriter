@@ -21,6 +21,34 @@ namespace VcxProjCLI {
             return args[idx];
         }
 
+        private static void ShowHelp() {
+            Console.WriteLine( "VCXProjWriter v0.2.0");
+            Console.WriteLine( "Copyleft (c) Str1ker, 2020-2021");
+            Console.WriteLine( );
+            Console.WriteLine( "Usage:");
+            Console.WriteLine( "-s, --substitute-path BEFORE=AFTER");
+            Console.WriteLine( "        replace all source/header paths that start with BEFORE to AFTER.");
+            Console.WriteLine( "        You definitely want this when editing Linux project on Windows.");
+            Console.WriteLine( "-o, --output-dir DIR");
+            Console.WriteLine($"        put solution to DIR directory. Default is '{config.Outdir}'.");
+            Console.WriteLine( "-f, --file FILE");
+            Console.WriteLine($"        read compilation database from FILE.'");
+            Console.WriteLine( "        The compilation database file should conform to compiledb \"arguments\" format.");
+            Console.WriteLine( "        More about it: https://github.com/nickdiego/compiledb");
+            Console.WriteLine( "-r, --remote");
+            Console.WriteLine( "        connect to remote system via SSH and collect information");
+            Console.WriteLine( "        from compiler(s) for more precise project generation");
+            Console.WriteLine( "--relax-include-dirs-order");
+            Console.WriteLine( "        allow to group together files with the same include");
+            Console.WriteLine( "        directories list but different order of them");
+            Console.WriteLine( "--debug");
+            Console.WriteLine( "        print lots of debugging information.");
+            Console.WriteLine( "--help");
+            Console.WriteLine( "        print this help message.");
+
+            Environment.Exit(0);
+        }
+
         private static void ProcessArgs(String[] args) {
             for (int idx = 0; idx < args.Length; idx++) {
                 switch (args[idx]) {
@@ -47,6 +75,7 @@ namespace VcxProjCLI {
                         config.BaseDir = AbsoluteCrosspath.FromString(TakeArg(args, ref idx));
                         break;
 
+#if PATH_BASED_FILTERING
                     case "--include":
                         config.IncludeFilesFrom.Add(Crosspath.FromString(TakeArg(args, ref idx)));
                         break;
@@ -54,6 +83,7 @@ namespace VcxProjCLI {
                     case "--exclude":
                         config.ExcludeFilesFrom.Add(Crosspath.FromString(TakeArg(args, ref idx)));
                         break;
+#endif
 
                     case "-o":
                     case "--output-dir":
@@ -75,35 +105,20 @@ namespace VcxProjCLI {
                         Solution.internalConfiguration.RelaxIncludeDirsOrder = true;
                         break;
 
+                    case "--randomize-outdir":
+                        config.Outdir = Path.Combine(config.Outdir, new Random().Next().ToString("x8"));
+                        break;
+
+                    case "--open-now":
+                        config.OpenSolution = true;
+                        break;
+
                     case "--debug":
                         Logger.Level = LogLevel.Debug;
                         break;
 
                     case "--help":
-                        Console.WriteLine( "VCXProjWriter v0.2.0");
-                        Console.WriteLine( "Copyleft (c) Str1ker, 2020-2021");
-                        Console.WriteLine( );
-                        Console.WriteLine( "Usage:");
-                        Console.WriteLine( "-s, --substitute-path BEFORE=AFTER");
-                        Console.WriteLine( "        replace all source/header paths that start with BEFORE to AFTER.");
-                        Console.WriteLine( "        You definitely want this when editing Linux project on Windows.");
-                        Console.WriteLine( "-o, --output-dir DIR");
-                        Console.WriteLine($"        put solution to DIR directory. Default is '{config.Outdir}'.");
-                        Console.WriteLine( "-f, --file FILE");
-                        Console.WriteLine($"        read compilation database from FILE. Default is '{config.InputFile}'");
-                        Console.WriteLine( "        The compilation database file should conform to compiledb \"arguments\" format.");
-                        Console.WriteLine( "        More about it: https://github.com/nickdiego/compiledb");
-                        Console.WriteLine( "-r, --remote");
-                        Console.WriteLine( "        connect to remote system via SSH and collect information");
-                        Console.WriteLine( "        from compiler(s) for more precise project generation");
-                        Console.WriteLine( "--relax-include-dirs-order");
-                        Console.WriteLine( "        allow to group together files with the same include");
-                        Console.WriteLine( "        directories list but different order of them");
-                        Console.WriteLine( "--debug");
-                        Console.WriteLine( "        print lots of debugging information.");
-                        Console.WriteLine( "--help");
-                        Console.WriteLine( "        print this help message.");
-                        Environment.Exit(0);
+                        ShowHelp();
                         return;
 
                     default:
@@ -117,6 +132,9 @@ namespace VcxProjCLI {
             try {
 #endif
                 ProcessArgs(args);
+                if (config.InputFile == null) {
+                    ShowHelp();
+                }
 
                 Stopwatch sw = new Stopwatch();
 
@@ -173,6 +191,10 @@ namespace VcxProjCLI {
                 Console.WriteLine();
                 Console.WriteLine($"Elapsed time: parseAndGroup = {parseAndGroup} ms, remoteInfo = {remoteInfo} ms" 
                                 + $", rebase = {rebase} ms, write = {write} ms.");
+
+                if (config.OpenSolution) {
+                    Process.Start(new ProcessStartInfo(Path.Combine(config.Outdir, SolutionStructure.SolutionFilename)) { UseShellExecute = true });
+                }
 #if !DEBUG
             }
             catch (Exception e) {
