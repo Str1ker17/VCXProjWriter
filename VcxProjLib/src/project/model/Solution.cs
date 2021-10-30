@@ -39,18 +39,23 @@ namespace VcxProjLib {
         // force includes are tracked as solution files too!
         protected HashSet<ProjectFile> solutionFiles;
         protected HashSet<Compiler> solutionCompilers;
+        protected HashSet<CompilerInstance> solutionCompilerInstances;
         protected Dictionary<String, IncludeDirectory> solutionIncludeDirectories;
 
         protected static HashSet<Guid> acquiredGuids = new HashSet<Guid>();
+
+        protected List<Define> overrideDefines;
 
         public Solution(Configuration config) {
             projects = new Dictionary<Int64, Project>();
             solutionFiles = new HashSet<ProjectFile>();
             solutionCompilers = new HashSet<Compiler>();
+            solutionCompilerInstances = new HashSet<CompilerInstance>();
             solutionIncludeDirectories = new Dictionary<String, IncludeDirectory>();
             selfGuid = AllocateGuid();
 
             this.BaseDir = config.BaseDir;
+            this.overrideDefines = config.OverrideDefines;
         }
 
         public static Guid AllocateGuid() {
@@ -88,14 +93,12 @@ namespace VcxProjLib {
             }
         }
 
-        public ProjectFile TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
+        public void TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
             if (!solutionFiles.Add(pf)) {
                 if (!allowDuplicate) {
                     throw new ApplicationException("[x] Attempt to add the same ProjectFile multiple times");
                 }
             }
-
-            return pf;
         }
 
         public IncludeDirectory TrackIncludeDirectory(AbsoluteCrosspath includeDirPath, IncludeDirectoryType idt) {
@@ -124,33 +127,54 @@ namespace VcxProjLib {
                 AbsoluteCrosspath workingDir = AbsoluteCrosspath.FromString(entry.directory);
                 AbsoluteCrosspath xpath = AbsoluteCrosspath.FromString(entry.file, workingDir);
 
-                // TODO: filter out entries using include and exclude lists
+                // TODO: filter out entries by include and exclude lists
 
                 // get compiler path
-                // we can't guess whether compilerPath is absolute or relative;
-                // it's possible to enforce compiledb's '--full-path' but I prefer to stay somewhat
-                // backwards-compatible.
+                // it can be absolute or relative
                 Crosspath compilerPath = Crosspath.FromString(entry.arguments[0]);
+
+                // TODO: filter out compilers by include and exclude lists
+
                 Compiler compiler = null;
                 foreach (Compiler solutionCompiler in solutionCompilers) {
                     if (solutionCompiler.ExePath.Equals(compilerPath)) {
                         // already registered
                         compiler = solutionCompiler;
+                        break;
                     }
                 }
-
                 if (compiler == null) {
                     compiler = new Compiler(compilerPath);
                     if (solutionCompilers.Add(compiler)) {
-                        Logger.WriteLine(LogLevel.Info, $"New compiler '{compilerPath}'");
+                        Logger.WriteLine(LogLevel.Info, $"New compiler '{compiler.ExePath}'");
                     }
                 }
 
+                CompilerInstance compilerInstance = null;
+                CompilerInstance compilerInstanceTmp = new CompilerInstance(compiler, entry.arguments);
+                foreach (CompilerInstance compilerInstanceInUse in compiler.Instances) {
+                    if (compilerInstanceInUse.Equals(compilerInstanceTmp)) {
+                        compilerInstance = compilerInstanceInUse;
+                        break;
+                    }
+                }
 
-                ProjectFile pf = new ProjectFile(this, xpath, compiler);
+                if (compilerInstance == null) {
+                    compilerInstance = compilerInstanceTmp;
+                    compiler.Instances.Add(compilerInstanceTmp);
+                    Logger.WriteLine(LogLevel.Info, $"New compiler instance '{compilerInstanceTmp.BaseCompiler.ExePath} {compilerInstanceTmp}'");
+                }
+
+                ProjectFile pf = new ProjectFile(this, xpath, compilerInstance);
                 Logger.WriteLine(LogLevel.Trace, $"===== file {xpath} =====");
 
                 pf.AddInfoFromCommandLine(workingDir, entry.arguments);
+
+                // put global override defines silently
+                foreach (Define define in overrideDefines) {
+                    pf.UnsetCppDefine(define.Name);
+                    pf.SetCppDefine(define.ToString());
+                }
 
                 TrackFile(pf);
 
@@ -158,7 +182,7 @@ namespace VcxProjLib {
                 //pf.DumpData();
                 Int64 projectHash = pf.HashProjectID();
                 if (!projects.ContainsKey(projectHash)) {
-                    projects.Add(projectHash, new Project(AllocateGuid(), compiler, pf.IncludeDirectories, pf.SetOfDefines, new HashSet<AbsoluteCrosspath>()));
+                    projects.Add(projectHash, new Project(AllocateGuid(), compilerInstance, pf.IncludeDirectories, pf.SetOfDefines, new HashSet<AbsoluteCrosspath>()));
                 }
 
                 // add file to project
@@ -190,14 +214,13 @@ namespace VcxProjLib {
                     Logger.WriteLine(LogLevel.Trace, "============================================");
                 }
             }
-
-            // put a breakpoint here
-            //Console.Read();
         }
 
         public void RetrieveExtraInfoFromRemote(RemoteHost remote) {
             foreach (Compiler compiler in solutionCompilers) {
-                compiler.ExtractAdditionalInfo(remote);
+                foreach (CompilerInstance compilerInstance in compiler.Instances) {
+                    compilerInstance.ExtractAdditionalInfo(remote);
+                }
             }
         }
 
@@ -211,7 +234,6 @@ namespace VcxProjLib {
             Directory.SetCurrentDirectory(pwd);
         }
 
-        // TODO: these WriteLine calls break encapsulation
         public void CheckForTotalRebase(ref List<IncludeDirectory> remoteNotRebased) {
             foreach (IncludeDirectory includeDir in solutionIncludeDirectories.Values) {
                 if (includeDir.Flavor == CrosspathFlavor.Unix) {
@@ -299,7 +321,7 @@ namespace VcxProjLib {
                 foreach (Project project in projects.Values) {
                     foreach (String cfg in SolutionStructure.SolutionConfigurations) {
                         foreach (String cfgStage in cfgStages) {
-                            sw.WriteLine($"\t\t{{{project.Guid.ToString().ToUpper()}}}.{cfg}|{SolutionStructure.SolutionPlatformName}.{cfgStage} = {cfg}|{project.Compiler.VSPlatform}");
+                            sw.WriteLine($"\t\t{{{project.Guid.ToString().ToUpper()}}}.{cfg}|{SolutionStructure.SolutionPlatformName}.{cfgStage} = {cfg}|{project.CompilerInstance.VSPlatform}");
                         }
                     }
                 }

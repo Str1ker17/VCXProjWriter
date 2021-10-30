@@ -17,7 +17,7 @@ namespace VcxProjLib {
         public RelativeCrosspath ProjectFolder { get; }
 
         // these properties are only valuable when grouping project files; do we need them inside the ProjectFile?
-        public Compiler CompilerOfFile { get; }
+        public CompilerInstance CompilerOfFile { get; }
         public IncludeDirectoryList IncludeDirectories { get; }
         public Boolean DoNotUseStandardIncludeDirectories { get; }
         public Dictionary<String, Define> Defines { get; }
@@ -25,8 +25,8 @@ namespace VcxProjLib {
         public HashSet<AbsoluteCrosspath> ForceIncludes { get; }
 
         // generate compiledb with '--full-path' for this to work
-        public ProjectFile(Solution sln, AbsoluteCrosspath filePath, Compiler compiler) {
-            CompilerOfFile = compiler;
+        public ProjectFile(Solution sln, AbsoluteCrosspath filePath, CompilerInstance compilerInstance) {
+            CompilerOfFile = compilerInstance;
             IncludeDirectories = new IncludeDirectoryList();
             DoNotUseStandardIncludeDirectories = false;
             Defines = new Dictionary<String, Define>();
@@ -111,7 +111,7 @@ namespace VcxProjLib {
         }
 
         public override String ToString() {
-            return $"{CompilerOfFile.ExePath} {FilePath}";
+            return $"{CompilerOfFile.BaseCompiler.ExePath} {FilePath}";
         }
 
         protected static String TakeArg(List<String> args, ref int idx) {

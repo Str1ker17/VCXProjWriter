@@ -56,7 +56,8 @@
     <Compile Include="src\project\supporters\DefineExactComparer.cs" />
     <Compile Include="src\project\supporters\IncludeDirectoryList.cs" />
     <Compile Include="src\project\supporters\IProjectable.cs" />
-    <Compile Include="src\remote\Compiler.cs" />
+    <Compile Include="src\project\model\remote\Compiler.cs" />
+    <Compile Include="src\project\model\remote\CompilerInstance.cs" />
     <Compile Include="src\remote\RemoteHost.cs" />
     <Compile Include="templates.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -91,5 +92,6 @@
   <ItemGroup>
     <None Include="templates\solution_post_compiler_compat.h" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

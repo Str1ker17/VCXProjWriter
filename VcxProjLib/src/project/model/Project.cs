@@ -22,7 +22,7 @@ namespace VcxProjLib {
         /// Do not mix compilers together in a single project since the compiler
         /// carry its specific built-in defines and standard include directories.
         /// </summary>
-        public Compiler Compiler { get; }
+        public CompilerInstance CompilerInstance { get; }
 
         /// <summary>
         /// Not only extra include directories, but system too.
@@ -51,12 +51,12 @@ namespace VcxProjLib {
 
         public HashSet<String> ProjectFilters { get; }
 
-        public Project(Guid guid, Compiler compiler, IncludeDirectoryList includeDirectories
+        public Project(Guid guid, CompilerInstance compilerInstance, IncludeDirectoryList includeDirectories
                      , HashSet<Define> defines, HashSet<AbsoluteCrosspath> forcedIncludes) {
             ProjectSerial = nextProjectId++;
             Guid = guid;
             Name = $"Project_{ProjectSerial:D4}";
-            Compiler = compiler;
+            CompilerInstance = compilerInstance;
             // copy references
             IncludeDirectories = includeDirectories;
             Defines = defines;
@@ -98,7 +98,7 @@ namespace VcxProjLib {
 
         public Boolean TestWhetherProjectFileBelongs(ProjectFile pf) {
             // TODO: allow relax if some defines are absent in one of sets
-            if (!Compiler.ExePath.Equals(pf.CompilerOfFile.ExePath)) {
+            if (!CompilerInstance.BaseCompiler.ExePath.Equals(pf.CompilerOfFile.BaseCompiler.ExePath)) {
                 return false;
             }
 
@@ -123,8 +123,8 @@ namespace VcxProjLib {
         public void WriteToFile(AbsoluteCrosspath solutionDir) {
             String inheritFrom;
             // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
-            if (Compiler.HaveAdditionalInfo) {
-                inheritFrom = $@"$(SolutionDir)\{Compiler.PropsFileName}";
+            if (CompilerInstance.HaveAdditionalInfo) {
+                inheritFrom = $@"$(SolutionDir)\{CompilerInstance.PropsFileName}";
             }
             else {
                 inheritFrom = @"$(SolutionDir)\Solution.props";

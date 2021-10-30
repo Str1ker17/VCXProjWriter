@@ -5,7 +5,7 @@ using System.IO.Compression;
 using CrosspathLib;
 
 namespace VcxProjLib {
-    public class IncludeDirectory : AbsoluteCrosspath, IComparable<IncludeDirectory> {
+    public class IncludeDirectory : AbsoluteCrosspath, IComparable<IncludeDirectory>, IEqualityComparer<IncludeDirectory> {
         public static readonly Dictionary<IncludeDirectoryType, String> IncludeParam =
                 new Dictionary<IncludeDirectoryType, String> {
                         { IncludeDirectoryType.Generic, "-I" }
@@ -156,6 +156,18 @@ namespace VcxProjLib {
             // since we definitely have a local copy of include directory, rebase on it
             this.Rebase(this, xLocalIncludeDirectory);
             autoDownloaded = true;
+        }
+
+        public bool Equals(IncludeDirectory x, IncludeDirectory y) {
+            if (ReferenceEquals(x, y)) return true;
+            if (ReferenceEquals(x, null)) return false;
+            if (ReferenceEquals(y, null)) return false;
+            if (x.GetType() != y.GetType()) return false;
+            return true;
+        }
+
+        public int GetHashCode(IncludeDirectory obj) {
+            return (int)obj.Type;
         }
     }
 }

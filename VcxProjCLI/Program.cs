@@ -38,6 +38,9 @@ namespace VcxProjCLI {
             Console.WriteLine( "-r, --remote");
             Console.WriteLine( "        connect to remote system via SSH and collect information");
             Console.WriteLine( "        from compiler(s) for more precise project generation");
+            Console.WriteLine( "-D, --define NAME=VALUE");
+            Console.WriteLine( "        define C preprocessor macro and override all occurences by this value.");
+            Console.WriteLine( "        This is useful if build system put too much uniqueness to it.");
             Console.WriteLine( "--relax-include-dirs-order");
             Console.WriteLine( "        allow to group together files with the same include");
             Console.WriteLine( "        directories list but different order of them");
@@ -99,6 +102,11 @@ namespace VcxProjCLI {
                     case "--remote":
                         RemoteHost remote = RemoteHost.Parse(TakeArg(args, ref idx));
                         config.AssignRemote(remote);
+                        break;
+
+                    case "-D":
+                    case "--define":
+                        config.OverrideDefines.Add(new Define(TakeArg(args, ref idx)));
                         break;
 
                     case "--relax-include-dirs-order":

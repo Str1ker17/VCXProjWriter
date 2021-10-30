@@ -1,39 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using CrosspathLib;
 
 namespace VcxProjLib {
-    /// <summary>
-    /// Follow the convention that compiler lives on the RemoteHost, so
-    /// RemoteHost have a reference to Compiler, and Compiler does not reference anything.
-    /// </summary>
-    public class Compiler {
-        public Crosspath ExePath { get; }
-        public String ShortName { get; }
+    public class CompilerInstance {
+        public Compiler BaseCompiler { get; }
+        protected Guid instanceGuid { get; }
+
+        public String PropsFileName { get { return String.Format(SolutionStructure.CompilerInstancePropsFileFormat, BaseCompiler.ShortName, this.Name); } }
+        public String CompilerInstanceCompatHeaderPath { get { return String.Format(SolutionStructure.ForcedIncludes.CompilerInstanceCompat, BaseCompiler.ShortName, this.Name); } }
+
+        /// <summary>
+        /// Can only be known from querying an instance.
+        /// </summary>
         public String Version { get; protected set; }
-        public String PropsFileName { get { return String.Format(SolutionStructure.CompilerPropsFileFormat, ShortName); } }
-        public Boolean HaveAdditionalInfo { get; protected set; }
-        public String CompilerCompatHeaderPath { get { return String.Format(SolutionStructure.ForcedIncludes.CompilerCompat, ShortName); } }
+        public Platform VSPlatform = Platform.Unknown;
+        public HashSet<String> identityOptions { get; }
+        protected static UInt32 serial = 1;
+        public String Name { get; }
+        public Boolean HaveAdditionalInfo { get; protected set; } = false;
+
+
         /// <summary>
         /// Since we are parsing output which is order-dependent, we have to preserve inserting order.
         /// Assuming that remote compiler removes duplicates on its own
         /// </summary>
         protected List<IncludeDirectory> IncludeDirectories { get; }
         protected HashSet<Define> Defines { get; }
-        public Platform VSPlatform = Platform.Unknown;
 
-        protected static readonly String[] LineEndings = {"\r\n", "\n", "\r"};
-        protected static readonly Char[] LineEndingsChar = {'\n', '\r'};
-        public static readonly String RemoteTempFile = "/tmp/VCXProjWriter.c";
+        /// <summary>
+        /// Readable identity by differentiating options.
+        /// </summary>
+        /// <returns></returns>
+        public override String ToString() {
+            return String.Join(" ", identityOptions).TrimEnd(' ');
+        }
 
-        public Compiler(Crosspath path) {
-            ExePath = path; // warning saves reference
-            ShortName = ExePath.LastEntry;
+        public override Boolean Equals(Object obj) {
+            if (ReferenceEquals(this, obj)) return true;
+            if (this.GetType() != obj.GetType()) return false;
+            return this.BaseCompiler == ((CompilerInstance)obj).BaseCompiler &&
+                   this.identityOptions.SetEquals(((CompilerInstance)obj).identityOptions);
+        }
+
+        public CompilerInstance(Compiler baseCompiler, List<String> args) {
+            this.BaseCompiler = baseCompiler;
+            identityOptions = new HashSet<String>();
+            instanceGuid = Solution.AllocateGuid();
             IncludeDirectories = new List<IncludeDirectory>();
             Defines = new HashSet<Define>(); // TODO: add comparer
+
+            foreach (String arg in args) {
+                // Machine-dependent options can change defines and include dirs
+                if (arg.StartsWith("-m", StringComparison.Ordinal)) {
+                    identityOptions.Add(arg);
+                }
+            }
+
+            Name = $"{serial:D4}";
+            ++serial;
         }
 
         /// <summary>
@@ -42,41 +72,44 @@ namespace VcxProjLib {
         /// </summary>
         /// <param name="remote">Remote host where compiler installed</param>
         public void ExtractAdditionalInfo(RemoteHost remote) {
+            String remoteTempFile = String.Format(Compiler.RemoteTempFile, BaseCompiler.ShortName, instanceGuid.ToString());
             if (remote.Execute("pwd || echo $PWD", out String pwd) != RemoteHost.Success) {
                 throw new ApplicationException("could not get current directory name");
             }
+            pwd = pwd.TrimEnd(RemoteHost.LineEndingChars);
 
-            if (remote.Execute($"which {ExePath}", out String absExePath) != RemoteHost.Success) {
+            if (remote.Execute($"which {BaseCompiler.ExePath}", out String absExePath) != RemoteHost.Success) {
                 throw new ApplicationException("could not get absolute compiler path");
             }
+            absExePath = absExePath.TrimEnd(RemoteHost.LineEndingChars);
 
-            if (remote.Execute($"{ExePath} -dumpversion", out String version) != RemoteHost.Success) {
+            if (remote.Execute($"{BaseCompiler.ExePath} -dumpversion", out String version) != RemoteHost.Success) {
                 throw new ApplicationException("could not extract version from compiler");
             }
+            Version = version.TrimEnd(RemoteHost.LineEndingChars);
 
             // create temporary .c file for auto-distinguishment between C and C++
-            if (remote.Execute($"touch {RemoteTempFile} || echo > {RemoteTempFile}", out String _) != RemoteHost.Success) {
+            if (remote.Execute($"touch {remoteTempFile} || echo > {remoteTempFile}", out String _) != RemoteHost.Success) {
                 throw new ApplicationException("could not create temporary file");
             }
 
-            if (remote.Execute($"{ExePath} -E -dM - < {RemoteTempFile} | sort", out String defines) != RemoteHost.Success) {
+            if (remote.Execute($"{BaseCompiler.ExePath} {this} -E -dM - < {remoteTempFile} | sort", out String defines) != RemoteHost.Success) {
                 throw new ApplicationException("could not extract defines from compiler");
             }
 
-            if (remote.Execute($"{ExePath} -c -Wp,-v {RemoteTempFile} 2>&1 1> /dev/null", out String includeDirs) != RemoteHost.Success) {
+            if (remote.Execute($"{BaseCompiler.ExePath} {this} -E -Wp,-v {remoteTempFile} 2>&1 1> /dev/null", out String includeDirs) != RemoteHost.Success) {
                 throw new ApplicationException("could not extract include dirs from compiler");
             }
 
-            AbsoluteCrosspath xpwd = AbsoluteCrosspath.FromString(pwd.TrimEnd(LineEndingsChar));
-            AbsoluteCrosspath xcompiler = AbsoluteCrosspath.FromString(absExePath.TrimEnd(LineEndingsChar));
-            if (!xcompiler.Equals(ExePath)) {
-                Logger.WriteLine(LogLevel.Info, $"compiler '{ExePath}' actually located at '{xcompiler}'");
+            AbsoluteCrosspath xpwd = AbsoluteCrosspath.FromString(pwd);
+            AbsoluteCrosspath xcompiler = AbsoluteCrosspath.FromString(absExePath);
+            if (!xcompiler.Equals(BaseCompiler.ExePath)) {
+                Logger.WriteLine(LogLevel.Info, $"compiler '{BaseCompiler.ExePath}' actually located at '{xcompiler}'");
             }
-            Version = version.TrimEnd(LineEndingsChar);
 
             Defines.Clear();
             Platform fallbackPlatform = Platform.x64;
-            foreach (String macro in defines.Split(LineEndings, StringSplitOptions.RemoveEmptyEntries)) {
+            foreach (String macro in defines.Split(RemoteHost.LineEndings, StringSplitOptions.RemoveEmptyEntries)) {
                 // assuming standard format '#define MACRO some thing probably with spaces'
                 String[] defArray = macro.Split(new[] {' '}, 3);
                 // try to auto-detect the platform
@@ -87,7 +120,9 @@ namespace VcxProjLib {
                         case "__arm__": VSPlatform = Platform.ARM; break;
                         case "__aarch64__": VSPlatform = Platform.ARM64; break;
                         case "__mips__": VSPlatform = Platform.MIPS; break;
-                        case "__INTPTR_WIDTH__":
+
+                        case "__WORDSIZE__": /* this seems to be standard */
+                        case "__INTPTR_WIDTH__": /* this not, but use as fallback */
                             if (Int32.Parse(defArray[2]) == 32) {
                                 fallbackPlatform = Platform.x86;
                             }
@@ -102,7 +137,7 @@ namespace VcxProjLib {
 
             IncludeDirectories.Clear();
             IncludeDirectoryType incDirType = IncludeDirectoryType.Null;
-            foreach (String cppLine in includeDirs.Split(LineEndings, StringSplitOptions.RemoveEmptyEntries)) {
+            foreach (String cppLine in includeDirs.Split(RemoteHost.LineEndings, StringSplitOptions.RemoveEmptyEntries)) {
                 // sample output:
 /*
 ignoring nonexistent directory "/opt/gcc-4.1.2-glibc-2.5-binutils-2.17-kernel-2.6.18/arm-v5te-linux-gnueabi/include"
@@ -155,7 +190,12 @@ End of search list.
                         xpath = relPath.Absolutized();
                     }
                     IncludeDirectory incDir = new IncludeDirectory(xpath as AbsoluteCrosspath, incDirType);
+                    IncludeDirectory incDirCached = BaseCompiler.TrackIncludeDir(incDir);
+                    if (incDirCached != null) {
+                        incDir = incDirCached;
+                    }
                     IncludeDirectories.Add(incDir);
+                    
                     continue;
                 }
 
@@ -166,26 +206,16 @@ End of search list.
 
             HaveAdditionalInfo = true;
 
-            Logger.WriteLine(LogLevel.Info, $"{absExePath} is {VSPlatform} compiler");
-        }
-
-        public void DownloadStandardIncludeDirectories(RemoteHost remote) {
-            // use sftp, or, when not possible, ssh cat
-            AbsoluteCrosspath xpwd = AbsoluteCrosspath.GetCurrentDirectory();
-            AbsoluteCrosspath xCompilerDir = xpwd.Appended(RelativeCrosspath.FromString($@"compilers\{ShortName}"));
-            Directory.CreateDirectory(xCompilerDir.ToString());
-            foreach (IncludeDirectory includeDirectory in IncludeDirectories) {
-                includeDirectory.RebaseToLocal(remote, xCompilerDir);
-            }
+            Logger.WriteLine(LogLevel.Info, $"{absExePath} {this} is {VSPlatform} compiler");
         }
 
         /// <summary>
         /// Writes compiler_${ShortName}.props and compiler_$(ShortName}_compat.h
         /// </summary>
         public void WriteToFile(AbsoluteCrosspath solutionDir) {
-            AbsoluteCrosspath xpath = AbsoluteCrosspath.GetCurrentDirectory().Append(RelativeCrosspath.FromString(CompilerCompatHeaderPath)).ToContainingDirectory();
+            AbsoluteCrosspath xpath = solutionDir.Appended(RelativeCrosspath.FromString(CompilerInstanceCompatHeaderPath)).ToContainingDirectory();
             Directory.CreateDirectory(xpath.ToString());
-            using (StreamWriter sw = new StreamWriter(CompilerCompatHeaderPath, false, Encoding.UTF8)) {
+            using (StreamWriter sw = new StreamWriter(CompilerInstanceCompatHeaderPath, false, Encoding.UTF8)) {
                 sw.WriteLine(@"#pragma once");
                 foreach (Define compilerInternalDefine in Defines) {
                     sw.WriteLine($"#define {compilerInternalDefine.Name} {compilerInternalDefine.Value}");
@@ -201,7 +231,7 @@ End of search list.
             projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
 
             XmlElement projectImportProps = doc.CreateElement("Import");
-            projectImportProps.SetAttribute("Project", @"$(SolutionDir)\Solution.props");
+            projectImportProps.SetAttribute("Project", $@"$(SolutionDir)\{BaseCompiler.PropsFileName}");
             projectNode.AppendChild(projectImportProps);
 
             // Platform settings
@@ -248,36 +278,18 @@ End of search list.
             // maybe someday this will be helpful, but now it can be inherited from Solution.props
             XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             // DONE: add compiler compat header to forced includes
-            projectForcedIncludes.InnerText = $@"$(SolutionDir)\solution_compat.h;$(SolutionDir)\{CompilerCompatHeaderPath};$(SolutionDir)\solution_post_compiler_compat.h";
+            projectForcedIncludes.InnerText = $@"$(SolutionDir)\solution_compat.h;$(SolutionDir)\{CompilerInstanceCompatHeaderPath};$(SolutionDir)\solution_post_compiler_compat.h";
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
 
             XmlElement compilerForcedIncludes = doc.CreateElement("CompilerCompat");
             // DONE: add compiler compat header to forced includes
-            compilerForcedIncludes.InnerText = $@"$(SolutionDir)\{CompilerCompatHeaderPath}";
+            compilerForcedIncludes.InnerText = $@"$(SolutionDir)\{CompilerInstanceCompatHeaderPath}";
             projectPropertyGroupIDU.AppendChild(compilerForcedIncludes);
 
             projectNode.AppendChild(projectPropertyGroupIDU);
 
             doc.AppendChild(projectNode);
             doc.Save(PropsFileName);
-        }
-
-        public override Int32 GetHashCode() {
-            return ExePath.GetHashCode();
-        }
-
-        public override Boolean Equals(Object obj) {
-            if (obj == null) return false;
-            if (!(obj is Compiler compiler)) return false;
-            return ExePath == compiler.ExePath;
-        }
-
-        /// <summary>
-        /// Parse generic compiler argument, i.e. extract value of parameter.
-        /// </summary>
-        /// <returns></returns>
-        public static bool ParseCommandLineArgument() {
-            return false;
         }
     }
 }

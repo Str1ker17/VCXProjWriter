@@ -36,6 +36,9 @@ namespace VcxProjLib {
 
         public static readonly int Success = 0;
 
+        public static readonly String[] LineEndings = {"\r\n", "\n", "\r"};
+        public static readonly Char[] LineEndingChars = {'\n', '\r'};
+
         public static RemoteHost Parse(String str) {
             // in format "user:pass@host:port". pass and port are optional
             Regex r = new Regex("^([\\w-]+):?(.*)@([A-z\\d\\.-]+):?([\\d]*)$");
@@ -97,10 +100,6 @@ namespace VcxProjLib {
             using (FileStream fs = new FileStream(localFilename, FileMode.Create)) {
                 _sftpClientConnection.DownloadFile(remoteFilename, fs);
             }
-        }
-
-        public void ExtractInfoFromCompiler(Compiler compiler) {
-            compiler.ExtractAdditionalInfo(this);
         }
     }
 }

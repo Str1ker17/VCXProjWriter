@@ -24,10 +24,13 @@ namespace VcxProjLib {
         public AbsoluteCrosspath BaseDir;
         public List<Crosspath> IncludeFilesFrom;
         public List<Crosspath> ExcludeFilesFrom;
+        public List<Define> OverrideDefines;
 
         protected Configuration() {
             Substitutions = new List<Tuple<AbsoluteCrosspath, AbsoluteCrosspath>>();
             Remote = null;
+
+            OverrideDefines = new List<Define>();
         }
 
         public static Configuration Default() {

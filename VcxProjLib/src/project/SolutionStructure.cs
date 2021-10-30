@@ -16,7 +16,7 @@ namespace VcxProjLib {
         public static readonly ForcedIncludesTemplate ForcedIncludes = new ForcedIncludesTemplate {
                 LocalCompat = @"{0}local_compat.h"
               , SolutionCompat = "solution_compat.h"
-              , CompilerCompat = @"compilers\{0}\compiler_{0}_compat.h"
+              , CompilerInstanceCompat = @"compilers\{0}\instances\compiler_{0}_compat_{1}.h"
               , SolutionPostCompat = "solution_post_compiler_compat.h"
               , LocalPostCompat = @"{0}local_post_compiler_compat.h"
         };
@@ -34,14 +34,15 @@ namespace VcxProjLib {
         }
 
         public class ForcedIncludesTemplate {
-            public String LocalCompat;
-            public String SolutionCompat;
-            public String CompilerCompat;
-            public String SolutionPostCompat;
-            public String LocalPostCompat;
+            public String LocalCompat { get; set; }
+            public String SolutionCompat { get; set; }
+            public String CompilerInstanceCompat { get; set; }
+            public String SolutionPostCompat { get; set; }
+            public String LocalPostCompat { get; set; }
         }
 
         public static readonly String CompilerPropsFileFormat = @"compilers\{0}\compiler_{0}.props";
+        public static readonly String CompilerInstancePropsFileFormat = @"compilers\{0}\instances\instance_{1}.props";
         public static readonly String RemoteIncludePath = @"remote\{0}";
     }
 }
