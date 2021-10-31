@@ -91,13 +91,17 @@ namespace VcxProjLib {
             AbsoluteCrosspath xLocalIncludeDirectory = localXpath.Appended(RelativeCrosspath.FromString(localDirectoryPattern));
             String localIncludeDirectory = xLocalIncludeDirectory.ToString();
             String localFilename = localXpath.Appended(RelativeCrosspath.FromString(localFilenamePattern)).ToString();
+
             Logger.WriteLine(LogLevel.Info, $"Rolling ${this} into {localFilenamePattern}...");
+            Directory.CreateDirectory(localIncludeDirectory);
             if (remote.Execute($"pushd {this} && zip -1 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
                 Logger.WriteLine(LogLevel.Error, result);
+                // FIXME, hack
+                this.Rebase(this, xLocalIncludeDirectory);
+                autoDownloaded = true;
                 return;
             }
 
-            Directory.CreateDirectory(localIncludeDirectory);
             remote.DownloadFile(remoteFilename, localFilename);
             File.WriteAllText(xLocalIncludeDirectory.Appended(RelativeCrosspath.FromString($@"..\{ShortName}_origin.txt")).ToString(), this.ToString());
 
@@ -140,6 +144,7 @@ namespace VcxProjLib {
 
                                     xfs.Write(zipExtractBuf, 0, len);
                                 }
+                                zas.Close();
                             }
                         }
                     }

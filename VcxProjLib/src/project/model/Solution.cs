@@ -93,12 +93,21 @@ namespace VcxProjLib {
             }
         }
 
-        public void TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
+        public ProjectFile TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
             if (!solutionFiles.Add(pf)) {
                 if (!allowDuplicate) {
-                    throw new ApplicationException("[x] Attempt to add the same ProjectFile multiple times");
+                    //throw new ApplicationException("[x] Attempt to add the same ProjectFile multiple times");
+                    Logger.WriteLine(LogLevel.Warning, $"[!] Attempt to add the same ProjectFile '{pf}' multiple times");
+                }
+
+                foreach (ProjectFile projectFile in solutionFiles) {
+                    if (projectFile.Equals(pf)) {
+                        return projectFile;
+                    }
                 }
             }
+
+            return pf;
         }
 
         public IncludeDirectory TrackIncludeDirectory(AbsoluteCrosspath includeDirPath, IncludeDirectoryType idt) {
@@ -182,7 +191,7 @@ namespace VcxProjLib {
                 //pf.DumpData();
                 Int64 projectHash = pf.HashProjectID();
                 if (!projects.ContainsKey(projectHash)) {
-                    projects.Add(projectHash, new Project(AllocateGuid(), compilerInstance, pf.IncludeDirectories, pf.SetOfDefines, new HashSet<AbsoluteCrosspath>()));
+                    projects.Add(projectHash, new Project(AllocateGuid(), compilerInstance, pf.IncludeDirectories, pf.SetOfDefines, pf.ForceIncludes));
                 }
 
                 // add file to project
@@ -192,8 +201,9 @@ namespace VcxProjLib {
                 }
 
                 if (!projects[projectHash].AddProjectFile(pf)) {
-                    throw new ApplicationException(
-                            $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - already exists");
+                    //throw new ApplicationException(
+                    //        $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - already exists");
+                    Logger.WriteLine(LogLevel.Error, $"[x] Could not add '{pf}' to project '{projectHash}' - already exists");
                 }
             }
 

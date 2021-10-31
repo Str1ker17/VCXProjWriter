@@ -117,6 +117,10 @@ namespace VcxProjLib {
                 return false;
             }
 
+            if (!ForcedIncludes.SetEquals(pf.ForceIncludes)) {
+                return false;
+            }
+
             return true;
         }
 
@@ -186,6 +190,9 @@ namespace VcxProjLib {
             XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             // TODO: add compiler compat header to forced includes
             projectForcedIncludes.InnerText = $@"$(ProjectDir)\{compatLocal};$(SolutionPreCompilerCompat);$(CompilerCompat);$(SolutionPostCompilerCompat);$(ProjectDir)\{compatLocalPost}";
+            foreach (AbsoluteCrosspath projectForcedInclude in ForcedIncludes) {
+                projectForcedIncludes.InnerText += $";{projectForcedInclude}";
+            }
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
 
             XmlElement projectDefines = doc.CreateElement("NMakePreprocessorDefinitions");

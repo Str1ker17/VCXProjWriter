@@ -107,11 +107,46 @@ namespace VcxProjLib {
                 hashIn += ((Int64)(def.Name.GetHashCode() + def.Value.GetHashCode())) << 32;
             }
 
+            foreach (AbsoluteCrosspath forceInclude in ForceIncludes) {
+                hashIn += ((Int64)forceInclude.GetHashCode()) << 21;
+            }
+
             return hashIn;
         }
 
+        // for SolutionFiles, only paths are necessary
+#if FALSE
+        public override int GetHashCode() {
+            Int64 bigHash = HashProjectID();
+            Int32 loPart = (Int32)(bigHash & 0xffffffff);
+            Int32 hiPart = (Int32)(bigHash >> 32);
+            return loPart ^ hiPart;
+        }
+
+        /// <summary>
+        /// FIXME
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj) {
+            if (obj == null) return false;
+            Boolean eq = ((ProjectFile) obj).HashProjectID() == this.HashProjectID();
+            return eq;
+        }
+#endif
+
+        public override int GetHashCode() {
+            return FilePath.GetHashCode();
+        }
+
+        public override bool Equals(object obj) {
+            if (obj == null) return false;
+            Boolean eq = ((ProjectFile)obj).FilePath.Equals(this.FilePath);
+            return eq;
+        }
+
         public override String ToString() {
-            return $"{CompilerOfFile.BaseCompiler.ExePath} {FilePath}";
+            return $"{CompilerOfFile.BaseCompiler.ExePath} {CompilerOfFile} {FilePath}";
         }
 
         protected static String TakeArg(List<String> args, ref int idx) {
@@ -195,8 +230,8 @@ namespace VcxProjLib {
 
                 if (TakeParamValue(args, ref i, "-include", out String forceInclude)) {
                     AbsoluteCrosspath forceIncludePath = AbsoluteCrosspath.FromString(forceInclude, workingDir);
-                    this.ForceIncludes.Add(forceIncludePath);
-                    this.OwnerSolution.TrackFile(new ProjectFile(OwnerSolution, forceIncludePath, this.CompilerOfFile), true);
+                    ProjectFile forceIncludeProjectFile = this.OwnerSolution.TrackFile(new ProjectFile(OwnerSolution, forceIncludePath, this.CompilerOfFile), true);
+                    this.ForceIncludes.Add(forceIncludeProjectFile.FilePath);
                     // ReSharper disable once RedundantJumpStatement
                     continue;
                 }
