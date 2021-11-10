@@ -203,7 +203,7 @@ namespace CrosspathLib {
         /// <summary>
         /// This is to find out which _paths_ are identical in filesystem.
         /// WARNING: this override leads to situation when multiple Crosspath instances are
-        /// 
+        /// equal, despite of being constructed from different working directories.
         /// </summary>
         /// <param name="obj">Object to compare with.</param>
         /// <returns>True if objects represent the same path in filesystem; false otherwise.</returns>

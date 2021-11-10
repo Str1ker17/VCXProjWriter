@@ -34,12 +34,8 @@ namespace VcxProjLib {
             ForceIncludes = new HashSet<AbsoluteCrosspath>();
             FilePath = filePath;
             OwnerSolution = sln;
-            try {
+            if (sln.BaseDir != null) {
                 ProjectFolder = RelativeCrosspath.CreateRelativePath(filePath, sln.BaseDir, true).ToContainingDirectory() as RelativeCrosspath;
-            }
-            catch {
-                // do not assign any folder
-                ProjectFolder = null;
             }
         }
 
@@ -139,11 +135,13 @@ namespace VcxProjLib {
             return FilePath.GetHashCode();
         }
 
+#if FALSE
         public override bool Equals(object obj) {
             if (obj == null) return false;
             Boolean eq = ((ProjectFile)obj).FilePath.Equals(this.FilePath);
             return eq;
         }
+#endif
 
         public override String ToString() {
             return $"{CompilerOfFile.BaseCompiler.ExePath} {CompilerOfFile} {FilePath}";

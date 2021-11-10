@@ -37,7 +37,7 @@ namespace VcxProjLib {
         // remember that solutionIncludeDirectories is provided for convenience of rebasing
         // but it does NOT need to be sorted and/or preserve order. go to Project for this
         // force includes are tracked as solution files too!
-        protected HashSet<ProjectFile> solutionFiles;
+        protected List<ProjectFile> solutionFiles;
         protected HashSet<Compiler> solutionCompilers;
         protected HashSet<CompilerInstance> solutionCompilerInstances;
         protected Dictionary<String, IncludeDirectory> solutionIncludeDirectories;
@@ -48,7 +48,7 @@ namespace VcxProjLib {
 
         public Solution(Configuration config) {
             projects = new Dictionary<Int64, Project>();
-            solutionFiles = new HashSet<ProjectFile>();
+            solutionFiles = new List<ProjectFile>();
             solutionCompilers = new HashSet<Compiler>();
             solutionCompilerInstances = new HashSet<CompilerInstance>();
             solutionIncludeDirectories = new Dictionary<String, IncludeDirectory>();
@@ -93,24 +93,12 @@ namespace VcxProjLib {
             }
         }
 
-        public ProjectFile TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
-            if (!solutionFiles.Add(pf)) {
-                if (!allowDuplicate) {
-                    //throw new ApplicationException("[x] Attempt to add the same ProjectFile multiple times");
-                    Logger.WriteLine(LogLevel.Warning, $"[!] Attempt to add the same ProjectFile '{pf}' multiple times");
-                }
-
-                foreach (ProjectFile projectFile in solutionFiles) {
-                    if (projectFile.Equals(pf)) {
-                        return projectFile;
-                    }
-                }
-            }
-
+        internal ProjectFile TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
+            solutionFiles.Add(pf);
             return pf;
         }
 
-        public IncludeDirectory TrackIncludeDirectory(AbsoluteCrosspath includeDirPath, IncludeDirectoryType idt) {
+        internal IncludeDirectory TrackIncludeDirectory(AbsoluteCrosspath includeDirPath, IncludeDirectoryType idt) {
             String includeDirStrReconstructed = includeDirPath.ToString();
             IncludeDirectory includeDir;
             if (!solutionIncludeDirectories.ContainsKey(includeDirStrReconstructed)) {
@@ -180,12 +168,11 @@ namespace VcxProjLib {
                 pf.AddInfoFromCommandLine(workingDir, entry.arguments);
 
                 // put global override defines silently
+                // TODO: write them to solution-wide props
                 foreach (Define define in overrideDefines) {
                     pf.UnsetCppDefine(define.Name);
                     pf.SetCppDefine(define.ToString());
                 }
-
-                TrackFile(pf);
 
                 // add to project files now?
                 //pf.DumpData();
@@ -205,6 +192,8 @@ namespace VcxProjLib {
                     //        $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - already exists");
                     Logger.WriteLine(LogLevel.Error, $"[x] Could not add '{pf}' to project '{projectHash}' - already exists");
                 }
+
+                TrackFile(pf);
             }
 
             Logger.WriteLine(LogLevel.Info, $"[i] Created a solution of {projects.Count} projects from {solutionFiles.Count} files");
@@ -217,8 +206,12 @@ namespace VcxProjLib {
                     }
 
                     using (var enumerator = projectKvp.Value.ProjectFiles.GetEnumerator()) {
-                        enumerator.MoveNext();
-                        enumerator.Current.DumpData();
+                        if (!enumerator.MoveNext()) {
+                            break;
+                        }
+                        if (enumerator.Current != null) {
+                            enumerator.Current.DumpData();
+                        }
                     }
 
                     Logger.WriteLine(LogLevel.Trace, "============================================");

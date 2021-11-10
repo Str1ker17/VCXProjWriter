@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using CrosspathLib;
 
@@ -23,7 +21,7 @@ namespace VcxProjLib {
         public HashSet<String> identityOptions { get; }
         protected static UInt32 serial = 1;
         public String Name { get; }
-        public Boolean HaveAdditionalInfo { get; protected set; } = false;
+        public Boolean HaveAdditionalInfo { get; protected set; }
 
 
         /// <summary>
@@ -44,7 +42,7 @@ namespace VcxProjLib {
         public override Boolean Equals(Object obj) {
             if (ReferenceEquals(this, obj)) return true;
             if (this.GetType() != obj.GetType()) return false;
-            return this.BaseCompiler == ((CompilerInstance)obj).BaseCompiler &&
+            return this.BaseCompiler.Equals(((CompilerInstance)obj).BaseCompiler) &&
                    this.identityOptions.SetEquals(((CompilerInstance)obj).identityOptions);
         }
 
