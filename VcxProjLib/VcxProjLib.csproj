@@ -53,6 +53,7 @@
     <Compile Include="src\project\IncludeDirectory.cs" />
     <Compile Include="src\project\Platform.cs" />
     <Compile Include="src\project\SolutionStructure.cs" />
+    <Compile Include="src\project\supporters\CompilerPossiblyRelativePathComparer.cs" />
     <Compile Include="src\project\supporters\DefineExactComparer.cs" />
     <Compile Include="src\project\supporters\IncludeDirectoryList.cs" />
     <Compile Include="src\project\supporters\IProjectable.cs" />

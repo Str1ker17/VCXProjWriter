@@ -98,7 +98,8 @@ namespace VcxProjLib {
 
         public Boolean TestWhetherProjectFileBelongs(ProjectFile pf) {
             // TODO: allow relax if some defines are absent in one of sets
-            if (!CompilerInstance.BaseCompiler.ExePath.Equals(pf.CompilerOfFile.BaseCompiler.ExePath)) {
+            if (!CompilerPossiblyRelativePathComparer.Instance.Equals(CompilerInstance.BaseCompiler,
+                    pf.CompilerOfFile.BaseCompiler)) {
                 return false;
             }
 
@@ -199,6 +200,7 @@ namespace VcxProjLib {
             foreach (Define define in Defines) {
                 projectDefines.InnerText += define + ";";
             }
+            projectDefines.InnerText += "$(NMakePreprocessorDefinitions)";
             projectPropertyGroupIDU.AppendChild(projectDefines);
 
             projectNode.AppendChild(projectPropertyGroupIDU);

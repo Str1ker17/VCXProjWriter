@@ -101,7 +101,7 @@ namespace VcxProjLib {
 
             AbsoluteCrosspath xpwd = AbsoluteCrosspath.FromString(pwd);
             AbsoluteCrosspath xcompiler = AbsoluteCrosspath.FromString(absExePath);
-            if (!xcompiler.Equals(BaseCompiler.ExePath)) {
+            if (!xcompiler.ToString().Equals(BaseCompiler.ExePath.ToString())) {
                 Logger.WriteLine(LogLevel.Info, $"compiler '{BaseCompiler.ExePath}' actually located at '{xcompiler}'");
             }
 

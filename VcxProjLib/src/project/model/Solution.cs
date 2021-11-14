@@ -49,7 +49,7 @@ namespace VcxProjLib {
         public Solution(Configuration config) {
             projects = new Dictionary<Int64, Project>();
             solutionFiles = new List<ProjectFile>();
-            solutionCompilers = new HashSet<Compiler>();
+            solutionCompilers = new HashSet<Compiler>(CompilerPossiblyRelativePathComparer.Instance);
             solutionCompilerInstances = new HashSet<CompilerInstance>();
             solutionIncludeDirectories = new Dictionary<String, IncludeDirectory>();
             selfGuid = AllocateGuid();
@@ -134,7 +134,7 @@ namespace VcxProjLib {
 
                 Compiler compiler = null;
                 foreach (Compiler solutionCompiler in solutionCompilers) {
-                    if (solutionCompiler.ExePath.Equals(compilerPath)) {
+                    if (solutionCompiler.ExePath.ToString().Equals(compilerPath.ToString())) {
                         // already registered
                         compiler = solutionCompiler;
                         break;
