@@ -4,8 +4,9 @@ namespace VcxProjLib {
     public class Define : IComparable {
         public static readonly Char[] Separator = {'='};
         public static readonly String DefaultValue = "";
-
-        public static DefineExactComparer ExactComparer = new DefineExactComparer();
+        
+        public String Name { get; }
+        public String Value { get; set; }
 
         public Define(String name, String value) {
             Name = name;
@@ -29,9 +30,6 @@ namespace VcxProjLib {
             }
         }
 
-        public String Name { get; }
-        public String Value { get; set; }
-
         public override String ToString() {
             if (Value == DefaultValue) {
                 return Name;
@@ -43,8 +41,8 @@ namespace VcxProjLib {
         /// <summary>
         /// Compare defines by name to sort them.
         /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
+        /// <param name="obj">Another define.</param>
+        /// <returns>Negative is lower, zero if equal, positive if greater.</returns>
         public Int32 CompareTo(Object obj) {
             if(obj == null) return Int32.MaxValue;
             if(!(obj is Define define)) return Int32.MaxValue;

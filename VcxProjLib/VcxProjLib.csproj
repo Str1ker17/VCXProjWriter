@@ -49,14 +49,15 @@
   <ItemGroup>
     <Compile Include="src\config\Configuration.cs" />
     <Compile Include="src\config\InternalConfiguration.cs" />
+    <Compile Include="src\fs\FileSystemEntry.cs" />
     <Compile Include="src\Logger.cs" />
+    <Compile Include="src\fs\FileSystem.cs" />
     <Compile Include="src\project\IncludeDirectory.cs" />
     <Compile Include="src\project\Platform.cs" />
     <Compile Include="src\project\SolutionStructure.cs" />
     <Compile Include="src\project\supporters\CompilerPossiblyRelativePathComparer.cs" />
     <Compile Include="src\project\supporters\DefineExactComparer.cs" />
     <Compile Include="src\project\supporters\IncludeDirectoryList.cs" />
-    <Compile Include="src\project\supporters\IProjectable.cs" />
     <Compile Include="src\project\model\remote\Compiler.cs" />
     <Compile Include="src\project\model\remote\CompilerInstance.cs" />
     <Compile Include="src\remote\RemoteHost.cs" />

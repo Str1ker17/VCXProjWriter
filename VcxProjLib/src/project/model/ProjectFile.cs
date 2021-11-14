@@ -23,14 +23,13 @@ namespace VcxProjLib {
         public Dictionary<String, Define> Defines { get; }
         public HashSet<Define> SetOfDefines { get; }
         public HashSet<AbsoluteCrosspath> ForceIncludes { get; }
-
-        // generate compiledb with '--full-path' for this to work
+        
         public ProjectFile(Solution sln, AbsoluteCrosspath filePath, CompilerInstance compilerInstance) {
             CompilerOfFile = compilerInstance;
             IncludeDirectories = new IncludeDirectoryList();
             DoNotUseStandardIncludeDirectories = false;
             Defines = new Dictionary<String, Define>();
-            SetOfDefines = new HashSet<Define>(Define.ExactComparer);
+            SetOfDefines = new HashSet<Define>(DefineExactComparer.Instance);
             ForceIncludes = new HashSet<AbsoluteCrosspath>();
             FilePath = filePath;
             OwnerSolution = sln;

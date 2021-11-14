@@ -20,5 +20,15 @@ namespace VcxProjLib {
         public Int32 GetHashCode(Define obj) {
             return obj.Name.GetHashCode() ^ obj.Value.GetHashCode();
         }
+
+        /* Implement Singleton pattern. */
+        protected DefineExactComparer() {
+        }
+
+        protected static DefineExactComparer singletonInstance = new DefineExactComparer();
+
+        public static DefineExactComparer Instance {
+            get { return singletonInstance; }
+        }
     }
 }

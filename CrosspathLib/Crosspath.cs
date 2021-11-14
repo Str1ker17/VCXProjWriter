@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace CrosspathLib {
@@ -12,7 +13,7 @@ namespace CrosspathLib {
       , Unix
     }
 
-    public abstract class Crosspath {
+    public abstract class Crosspath : IEnumerable<String> {
         public String SourceString { get; private set; }
         public CrosspathOrigin Origin { get; private set; }
         public CrosspathFlavor Flavor { get; protected set; }
@@ -180,6 +181,14 @@ namespace CrosspathLib {
             }
 
             return this;
+        }
+
+        public IEnumerator<String> GetEnumerator() {
+            return directories.GetEnumerator();
+        }
+        
+        IEnumerator IEnumerable.GetEnumerator() {
+            return GetEnumerator();
         }
 
         /// <summary>

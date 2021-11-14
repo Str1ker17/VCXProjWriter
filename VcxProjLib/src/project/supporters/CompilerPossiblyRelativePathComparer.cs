@@ -20,7 +20,7 @@ namespace VcxProjLib {
         public Int32 GetHashCode(Compiler obj) {
             return obj.ExePath.ToString().GetHashCode();
         }
-
+        
         /* Implement Singleton pattern. */
         protected CompilerPossiblyRelativePathComparer() { }
 
