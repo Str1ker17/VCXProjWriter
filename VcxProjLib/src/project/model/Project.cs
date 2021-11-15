@@ -151,7 +151,7 @@ namespace VcxProjLib {
 
             XmlElement projectNode = doc.CreateElement("Project");
             projectNode.SetAttribute("DefaultTargets", "Build");
-            projectNode.SetAttribute("ToolsVersion", "15.0");
+            projectNode.SetAttribute("ToolsVersion", "Current");
             projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
 
             XmlElement projectImportProps = doc.CreateElement("Import");
@@ -248,7 +248,7 @@ namespace VcxProjLib {
 
             XmlElement projectNode = doc.CreateElement("Project");
             projectNode.SetAttribute("DefaultTargets", "Build");
-            projectNode.SetAttribute("ToolsVersion", "4.0");
+            projectNode.SetAttribute("ToolsVersion", "Current");
             projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
 
             XmlElement projectFolders = doc.CreateElement("ItemGroup");

@@ -55,7 +55,14 @@ namespace VcxProjLib {
 
             foreach (String arg in args) {
                 // Machine-dependent options can change defines and include dirs
-                if (arg.StartsWith("-m", StringComparison.Ordinal)) {
+                // See also: https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+                if (arg.StartsWith("-m", StringComparison.Ordinal)
+                 || arg.StartsWith("-fstack-protector", StringComparison.Ordinal) // __SSP__
+                 || arg.StartsWith("-O", StringComparison.Ordinal) // __OPTIMIZE__
+                 || arg.StartsWith("-funsigned-char", StringComparison.Ordinal) // __CHAR_UNSIGNED__
+                 || arg.StartsWith("-fsanitize=", StringComparison.Ordinal) // __SANITIZE_ADDRESS__
+                 || arg.StartsWith("-ffast-math", StringComparison.Ordinal)
+                ) {
                     identityOptions.Add(arg);
                 }
             }
@@ -225,7 +232,7 @@ End of search list.
 
             XmlElement projectNode = doc.CreateElement("Project");
             projectNode.SetAttribute("DefaultTargets", "Build");
-            projectNode.SetAttribute("ToolsVersion", "15.0");
+            projectNode.SetAttribute("ToolsVersion", "Current");
             projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
 
             XmlElement projectImportProps = doc.CreateElement("Import");

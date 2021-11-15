@@ -92,7 +92,7 @@ namespace VcxProjLib {
             String localIncludeDirectory = xLocalIncludeDirectory.ToString();
             String localFilename = localXpath.Appended(RelativeCrosspath.FromString(localFilenamePattern)).ToString();
 
-            Logger.WriteLine(LogLevel.Info, $"Rolling ${this} into {localFilenamePattern}...");
+            Logger.WriteLine(LogLevel.Info, $"Rolling {this} into {localFilenamePattern}...");
             Directory.CreateDirectory(localIncludeDirectory);
             if (remote.Execute($"pushd {this} && zip -1 -r -q {remoteFilename} . && popd", out String result) != RemoteHost.Success) {
                 Logger.WriteLine(LogLevel.Error, result);

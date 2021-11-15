@@ -69,7 +69,7 @@ namespace VcxProjLib {
 
             XmlElement projectNode = doc.CreateElement("Project");
             projectNode.SetAttribute("DefaultTargets", "Build");
-            projectNode.SetAttribute("ToolsVersion", "15.0");
+            projectNode.SetAttribute("ToolsVersion", "Current");
             projectNode.SetAttribute("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003");
 
             XmlElement projectImportProps = doc.CreateElement("Import");
@@ -78,8 +78,11 @@ namespace VcxProjLib {
 
             XmlElement projectPropertyGroupCompiler = doc.CreateElement("PropertyGroup");
             XmlElement projectCompilerExeName = doc.CreateElement("RemoteCCompileToolExe");
-            projectCompilerExeName.InnerText = ExePath.LastEntry;
+            projectCompilerExeName.InnerText = ExePath.ToString();
             projectPropertyGroupCompiler.AppendChild(projectCompilerExeName);
+            XmlElement projectCompilerCppExeName = doc.CreateElement("RemoteCppCompileToolExe");
+            projectCompilerCppExeName.InnerText = ExePath.ToString();
+            projectPropertyGroupCompiler.AppendChild(projectCompilerCppExeName);
 
             projectNode.AppendChild(projectPropertyGroupCompiler);
 

@@ -32,8 +32,10 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Makefile</ConfigurationType>
-    <RemoteRootDir>/tmp/VCXProjWriter</RemoteRootDir>
     <UseCompiler>false</UseCompiler>
+    <!-- override in project settings to debug it -->
+    <RemoteRootDir>/tmp/VCXProjWriter</RemoteRootDir>
+    <RemoteProjectRelDir />
   </PropertyGroup>
   <PropertyGroup>
     <!-- this is custom property to avoid duplicates -->
@@ -45,6 +47,7 @@
     <NMakePreprocessorDefinitions>VCXPROJWRITER</NMakePreprocessorDefinitions>
     <AdditionalOptions>/UVCXPROJWRITER0</AdditionalOptions>
     <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>
+    <RemoteCppCompileToolExe>g++</RemoteCppCompileToolExe>
     <SourcesToCopyRemotelyOverride />
     <RemoteCopySourceMethod>sftp</RemoteCopySourceMethod>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
@@ -57,8 +60,12 @@
     <RemoteBuildCommandLine />
     <RemoteReBuildCommandLine />
     <RemoteCleanCommandLine />
-    <RemoteBuildOutputs />
+    <RemoteBuildOutputs /><!-- if we know the target exe, put it there -->
     <ProjectPublicIncludePath />
+    <RemoteDeployDir>$(RemoteRootDir)</RemoteDeployDir>
+    <DebuggerFlavor>LinuxDebugger</DebuggerFlavor>
+    <PreLaunchCommand>cd $(RemoteRootDir)</PreLaunchCommand>
+    <RemoteDebuggerWorkingDirectory>$(RemoteRootDir)</RemoteDebuggerWorkingDirectory>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
