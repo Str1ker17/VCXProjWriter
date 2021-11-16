@@ -28,6 +28,10 @@ namespace CrosspathLib {
             this.WorkingDirectory = workdir;
         }
 
+        /// <summary>
+        /// Construct a new AbsoluteCrosspath object from this RelativeCrosspath object and its WorkingDirectory.
+        /// </summary>
+        /// <returns>AbsoluteCrosspath; exception if WorkingDirectory is not set.</returns>
         public AbsoluteCrosspath Absolutized() {
             // assume that:
             // - self is relative
@@ -35,6 +39,11 @@ namespace CrosspathLib {
             return new AbsoluteCrosspath(WorkingDirectory).Append(this);
         }
 
+        /// <summary>
+        /// Construct a new AbsoluteCrosspath object from this RelativeCrosspath object and custom working directory.
+        /// </summary>
+        /// <param name="root">A working directory for this relative path.</param>
+        /// <returns>AbsoluteCrosspath</returns>
         public AbsoluteCrosspath Absolutized(AbsoluteCrosspath root) {
             return new AbsoluteCrosspath(root).Append(this);
         }
@@ -80,9 +89,10 @@ namespace CrosspathLib {
 
         public override String ToAbsolutizedString() {
             if (WorkingDirectory is null) {
-                throw new PolymorphismException("attempt to absolutize RelativePath without a WorkingDirectory");
+                throw new PolymorphismException($"attempt to absolutize RelativePath '{this}' without a WorkingDirectory");
             }
 
+            // This creates much garbage. Optimize when some good (or bad) times will come.
             return new AbsoluteCrosspath(WorkingDirectory).Append(this).ToString();
         }
 
@@ -141,6 +151,50 @@ namespace CrosspathLib {
             }
 
             return ret;
+        }
+
+        public override Int32 GetHashCode() {
+            return base.GetHashCode();
+        }
+
+        /// <summary>
+        /// Support compare against AbsoluteCrosspath if they actually point to the same file.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override Boolean Equals(Object obj) {
+            if (obj is RelativeCrosspath relativeCrosspath) {
+                return EqualsToRelative(relativeCrosspath);
+            }
+
+            if (obj is AbsoluteCrosspath absoluteCrosspath) {
+                return EqualsToAbsolute(absoluteCrosspath);
+            }
+
+            return false;
+        }
+
+        internal Boolean EqualsToAbsolute(AbsoluteCrosspath absoluteCrosspath) {
+            if (WorkingDirectory is null) {
+                return false;
+            }
+
+            // Do not use base comparer there!
+            return this.ToAbsolutizedString() == absoluteCrosspath.ToAbsolutizedString();
+        }
+
+        internal Boolean EqualsToRelative(RelativeCrosspath relativeCrosspath) {
+            if (this.WorkingDirectory == null) {
+                if (relativeCrosspath.WorkingDirectory != null) {
+                    return false;
+                }
+            }
+
+            if (this.WorkingDirectory != null && !this.WorkingDirectory.Equals(relativeCrosspath.WorkingDirectory)) {
+                return false;
+            }
+
+            return base.Equals(relativeCrosspath);
         }
     }
 }

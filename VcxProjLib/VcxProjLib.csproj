@@ -57,6 +57,7 @@
     <Compile Include="src\project\SolutionStructure.cs" />
     <Compile Include="src\project\supporters\CompilerPossiblyRelativePathComparer.cs" />
     <Compile Include="src\project\supporters\DefineExactComparer.cs" />
+    <Compile Include="src\project\supporters\DefineNameOnlyComparer.cs" />
     <Compile Include="src\project\supporters\IncludeDirectoryList.cs" />
     <Compile Include="src\project\model\remote\Compiler.cs" />
     <Compile Include="src\project\model\remote\CompilerInstance.cs" />

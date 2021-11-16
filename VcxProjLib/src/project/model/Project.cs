@@ -11,12 +11,23 @@ namespace VcxProjLib {
         public int ProjectSerial { get; }
         public Guid Guid { get; }
         public String Name { get; set; }
+        public Int64 ProjectHash { get; protected set; }
 
         public String Filename {
             get {
                 return String.Format(SolutionStructure.ProjectFilePathFormat, Name);
             }
         }
+
+        /// <summary>
+        /// Do not write down this project.
+        /// </summary>
+        public Boolean Skip { get; set; }
+
+        /// <summary>
+        /// Projects are created in context of solution, so there's a link to owner.
+        /// </summary>
+        protected Solution OwnerSolution { get; }
 
         /// <summary>
         /// Do not mix compilers together in a single project since the compiler
@@ -51,10 +62,12 @@ namespace VcxProjLib {
 
         public HashSet<String> ProjectFilters { get; }
 
-        public Project(Guid guid, CompilerInstance compilerInstance, IncludeDirectoryList includeDirectories
+        public Project(Guid guid, Int64 projectHash, Solution ownerSolution, CompilerInstance compilerInstance, IncludeDirectoryList includeDirectories
                      , HashSet<Define> defines, HashSet<AbsoluteCrosspath> forcedIncludes) {
             ProjectSerial = nextProjectId++;
             Guid = guid;
+            ProjectHash = projectHash;
+            OwnerSolution = ownerSolution;
             Name = $"Project_{ProjectSerial:D4}";
             CompilerInstance = compilerInstance;
             // copy references
@@ -103,7 +116,7 @@ namespace VcxProjLib {
                 return false;
             }
 
-            if (Solution.internalConfiguration.RelaxIncludeDirsOrder) {
+            if (OwnerSolution.config.RelaxIncludeDirsOrder) {
                 if (!IncludeDirectories.ListIdenticalRelaxOrder(pf.IncludeDirectories)) {
                     return false;
                 }
@@ -127,6 +140,11 @@ namespace VcxProjLib {
 
         public void WriteToFile(AbsoluteCrosspath solutionDir) {
             String inheritFrom;
+
+            if (Skip || CompilerInstance.BaseCompiler.Skip) {
+                return;
+            }
+
             // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
             if (CompilerInstance.HaveAdditionalInfo) {
                 inheritFrom = $@"$(SolutionDir)\{CompilerInstance.PropsFileName}";
@@ -209,8 +227,10 @@ namespace VcxProjLib {
             XmlElement projectItemGroupCompiles = doc.CreateElement("ItemGroup");
             projectItemGroupCompiles.SetAttribute("Label", "Source Files");
             foreach (ProjectFile projectFile in this.ProjectFiles) {
+                // exclusion list comes here!
+                // TODO: we need to access path before rebase occured...
                 XmlElement projectFileXmlElement = doc.CreateElement("ClCompile");
-                projectFileXmlElement.SetAttribute("Include", projectFile.FilePath.ToAbsolutizedString());
+                projectFileXmlElement.SetAttribute("Include", projectFile.FilePath.ToString());
                 projectItemGroupCompiles.AppendChild(projectFileXmlElement);
             }
 

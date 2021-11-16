@@ -27,17 +27,24 @@ namespace CrosspathLib {
         // Windows and Unix paths.
         // also we need some flavor-agnostic internal format to store paths
 
+        protected static int _serial_seq = 1;
+        protected static List<Crosspath> allObjects = new List<Crosspath>();
+        protected static HashSet<Crosspath> allObjectsSet = new HashSet<Crosspath>();
+        protected int serial;
         /// <summary>
         /// This constructor is hidden from the outside of classes
         /// </summary>
         protected Crosspath() {
+            serial = _serial_seq;
+            ++_serial_seq;
+            allObjects.Add(this);
         }
 
         /// <summary>
         /// Creates a copy of Crosspath instance.
         /// </summary>
         /// <param name="xpath">Source instance.</param>
-        protected Crosspath(Crosspath xpath) {
+        protected Crosspath(Crosspath xpath) : this() {
             SourceString = xpath.SourceString;
             Origin = xpath.Origin;
             Flavor = xpath.Flavor;
@@ -202,26 +209,32 @@ namespace CrosspathLib {
         }
 
         /// <summary>
-        /// This is to find out which _paths_ are identical in filesystem.
+        /// This is tricky. Enabling AbsoluteCrosspath and RelativeCrosspath to be equal
+        /// limits count of internals that still remain different.
         /// </summary>
-        /// <returns>Hash code of an absolutized string.</returns>
+        /// <returns></returns>
         public override Int32 GetHashCode() {
-            return ToAbsolutizedString().GetHashCode();
+            //return ToAbsolutizedString().GetHashCode();
+            return Flavor.GetHashCode() + LastEntry.GetHashCode();
         }
 
         /// <summary>
         /// This is to find out which _paths_ are identical in filesystem.
+        /// This is the base equality comparer; to compare AbsoluteCrosspath and RelativeCrosspath,
+        /// they must implement it ourselves, or `Origin' field break it.
         /// WARNING: this override leads to situation when multiple Crosspath instances are
         /// equal, despite of being constructed from different working directories.
         /// </summary>
         /// <param name="obj">Object to compare with.</param>
         /// <returns>True if objects represent the same path in filesystem; false otherwise.</returns>
         public override Boolean Equals(Object obj) {
-            if (!(obj is Crosspath)) {
+            if (!(obj is Crosspath crosspath)) {
                 return false;
             }
 
-            return ((Crosspath) obj).ToAbsolutizedString() == ToAbsolutizedString();
+            return this.Origin == crosspath.Origin && this.Flavor == crosspath.Flavor &&
+                   this.WindowsRootDrive == crosspath.WindowsRootDrive &&
+                   LinkedListEquality.Equals<String>(this.directories, crosspath.directories);
         }
     }
 }

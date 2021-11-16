@@ -20,17 +20,25 @@ namespace VcxProjLib {
         public List<Tuple<AbsoluteCrosspath, AbsoluteCrosspath>> Substitutions { get; private set; }
         public RemoteHost Remote { get; private set; }
 
+        public Boolean RelaxIncludeDirsOrder { get; set; }
+
         // encapsulation sucks sometimes
+
+        /// <summary>
+        /// The (remote) directory in which most source files will be looked up for project structure.
+        /// The rest will be placed to the special "External sources" folder.
+        /// </summary>
         public AbsoluteCrosspath BaseDir;
+
         public List<Crosspath> IncludeFilesFrom;
         public List<Crosspath> ExcludeFilesFrom;
-        public List<Define> OverrideDefines;
+        public HashSet<Define> OverrideDefines = new HashSet<Define>(DefineNameOnlyComparer.Instance);
+        public HashSet<Crosspath> IncludeCompilers;
+        public HashSet<Crosspath> ExcludeCompilers = new HashSet<Crosspath>();
 
         protected Configuration() {
             Substitutions = new List<Tuple<AbsoluteCrosspath, AbsoluteCrosspath>>();
             Remote = null;
-
-            OverrideDefines = new List<Define>();
         }
 
         public static Configuration Default() {

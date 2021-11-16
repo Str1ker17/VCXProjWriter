@@ -23,7 +23,6 @@ namespace VcxProjLib {
         public String Name { get; }
         public Boolean HaveAdditionalInfo { get; protected set; }
 
-
         /// <summary>
         /// Since we are parsing output which is order-dependent, we have to preserve inserting order.
         /// Assuming that remote compiler removes duplicates on its own
@@ -37,6 +36,10 @@ namespace VcxProjLib {
         /// <returns></returns>
         public override String ToString() {
             return String.Join(" ", identityOptions).TrimEnd(' ');
+        }
+
+        public override Int32 GetHashCode() {
+            return BaseCompiler.ShortName.GetHashCode();
         }
 
         public override Boolean Equals(Object obj) {
@@ -109,6 +112,8 @@ namespace VcxProjLib {
             AbsoluteCrosspath xpwd = AbsoluteCrosspath.FromString(pwd);
             AbsoluteCrosspath xcompiler = AbsoluteCrosspath.FromString(absExePath);
             if (!xcompiler.ToString().Equals(BaseCompiler.ExePath.ToString())) {
+                AbsoluteCrosspath compilerLocatedIn = new AbsoluteCrosspath(xcompiler);
+                ((RelativeCrosspath)BaseCompiler.ExePath).SetWorkingDirectory(xcompiler.ToContainingDirectory());
                 Logger.WriteLine(LogLevel.Info, $"compiler '{BaseCompiler.ExePath}' actually located at '{xcompiler}'");
             }
 
@@ -218,10 +223,15 @@ End of search list.
         /// Writes compiler_${ShortName}.props and compiler_$(ShortName}_compat.h
         /// </summary>
         public void WriteToFile(AbsoluteCrosspath solutionDir) {
+            if (BaseCompiler.Skip) {
+                return;
+            }
+
             AbsoluteCrosspath xpath = solutionDir.Appended(RelativeCrosspath.FromString(CompilerInstanceCompatHeaderPath)).ToContainingDirectory();
             Directory.CreateDirectory(xpath.ToString());
             using (StreamWriter sw = new StreamWriter(CompilerInstanceCompatHeaderPath, false, Encoding.UTF8)) {
                 sw.WriteLine(@"#pragma once");
+                sw.WriteLine($"/* This is generated from compiler instance {BaseCompiler} {this} */");
                 foreach (Define compilerInternalDefine in Defines) {
                     sw.WriteLine($"#define {compilerInternalDefine.Name} {compilerInternalDefine.Value}");
                 }

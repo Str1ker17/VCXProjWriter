@@ -41,6 +41,9 @@ namespace VcxProjCLI {
             Console.WriteLine( "-D, --define NAME=VALUE");
             Console.WriteLine( "        define C preprocessor macro and override all occurences by this value.");
             Console.WriteLine( "        This is useful if build system put too much uniqueness to it.");
+            Console.WriteLine( "--exclude-compiler COMPILER");
+            Console.WriteLine( "        do not create anything for sources built with COMPILER.");
+            Console.WriteLine( "        COMPILER can be an absolute or relative path.");
             Console.WriteLine( "--relax-include-dirs-order");
             Console.WriteLine( "        allow to group together files with the same include");
             Console.WriteLine( "        directories list but different order of them");
@@ -109,8 +112,12 @@ namespace VcxProjCLI {
                         config.OverrideDefines.Add(new Define(TakeArg(args, ref idx)));
                         break;
 
+                    case "--exclude-compiler":
+                        config.ExcludeCompilers.Add(Crosspath.FromString(TakeArg(args, ref idx)));
+                        break;
+
                     case "--relax-include-dirs-order":
-                        Solution.internalConfiguration.RelaxIncludeDirsOrder = true;
+                        config.RelaxIncludeDirsOrder = true;
                         break;
 
                     case "--randomize-outdir":
@@ -159,6 +166,8 @@ namespace VcxProjCLI {
                 }
                 sw.Stop();
                 Int64 remoteInfo = sw.ElapsedMilliseconds;
+
+                sln.FilterOutEntries();
 
                 sw.Reset();
                 sw.Start();

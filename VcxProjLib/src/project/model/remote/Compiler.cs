@@ -22,6 +22,8 @@ namespace VcxProjLib {
         /// </summary>
         protected List<IncludeDirectory> IncludeDirectories { get; }
 
+        public Boolean Skip { get; set; }
+
         public static readonly String RemoteTempFile = "/tmp/VCXProjWriter_{0}_{1}.c";
 
         public Compiler(Crosspath path) {
@@ -29,6 +31,10 @@ namespace VcxProjLib {
             ShortName = ExePath.LastEntry;
             Instances = new List<CompilerInstance>();
             IncludeDirectories = new List<IncludeDirectory>();
+        }
+
+        public override String ToString() {
+            return ExePath.ToString();
         }
 
         public IncludeDirectory TrackIncludeDir(IncludeDirectory includeDirectory) {
@@ -44,6 +50,9 @@ namespace VcxProjLib {
         }
 
         public void DownloadStandardIncludeDirectories(RemoteHost remote) {
+            if (Skip) {
+                return;
+            }
             // use sftp, or, when not possible, ssh cat
             AbsoluteCrosspath xpwd = AbsoluteCrosspath.GetCurrentDirectory();
             AbsoluteCrosspath xCompilerDir = xpwd.Appended(RelativeCrosspath.FromString($@"compilers\{ShortName}"));
@@ -57,6 +66,10 @@ namespace VcxProjLib {
         /// Writes compiler_${ShortName}.props and compiler_$(ShortName}_compat.h
         /// </summary>
         public void WriteToFile(AbsoluteCrosspath solutionDir) {
+            if (Skip) {
+                return;
+            }
+
             AbsoluteCrosspath compilerDir = RelativeCrosspath.FromString(PropsFileName).Absolutized(AbsoluteCrosspath.GetCurrentDirectory()).ToContainingDirectory();
             Directory.CreateDirectory(compilerDir.ToString());
 

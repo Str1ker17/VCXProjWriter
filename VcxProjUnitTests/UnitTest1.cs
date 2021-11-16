@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using CrosspathLib;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -87,13 +88,12 @@ namespace VcxProjUnitTests {
             Assert.AreEqual("INCLUDE_L3=YES", def4.ToString());
         }
 
-#if LEGACY
         [TestMethod]
         public void DefineComparer() {
             Define def1 = new Define("INCLUDE_L3");
             Define def2 = new Define("INCLUDE_L3=1");
-            HashSet<Define> hs1 = new HashSet<Define>(new DefineNameOnlyComparer());
-            HashSet<Define> hs2 = new HashSet<Define>(new DefineExactComparer());
+            HashSet<Define> hs1 = new HashSet<Define>(DefineNameOnlyComparer.Instance);
+            HashSet<Define> hs2 = new HashSet<Define>(DefineExactComparer.Instance);
             hs1.Add(def1);
             hs1.Add(def2);
             hs2.Add(def1);
@@ -101,7 +101,6 @@ namespace VcxProjUnitTests {
             Assert.AreEqual(1, hs1.Count);
             Assert.AreEqual(2, hs2.Count);
         }
-#endif
 
         [TestMethod]
         public void IncludeDirsOrder() {

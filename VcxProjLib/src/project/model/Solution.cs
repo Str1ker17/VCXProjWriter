@@ -7,9 +7,8 @@ using Newtonsoft.Json;
 
 namespace VcxProjLib {
     public class Solution {
-        public static InternalConfiguration internalConfiguration = new InternalConfiguration {
-            RelaxIncludeDirsOrder = false
-        };
+        // Dependency injection. The object referenced there is mutable.
+        internal Configuration config;
 
         /// <summary>
         /// The unique identifier of solution in terms of VS.
@@ -20,12 +19,6 @@ namespace VcxProjLib {
         /// Solution is a set of projects.
         /// </summary>
         protected Dictionary<Int64, Project> projects;
-
-        /// <summary>
-        /// The (remote) directory in which most source files will be looked up for project structure.
-        /// The rest will be placed to the special "External sources" folder.
-        /// </summary>
-        public AbsoluteCrosspath BaseDir { get; }
 
         // these containers have 2 targets:
         //   1. avoid duplicates;
@@ -44,18 +37,14 @@ namespace VcxProjLib {
 
         protected static HashSet<Guid> acquiredGuids = new HashSet<Guid>();
 
-        protected List<Define> overrideDefines;
-
         public Solution(Configuration config) {
+            this.config = config;
             projects = new Dictionary<Int64, Project>();
             solutionFiles = new List<ProjectFile>();
             solutionCompilers = new HashSet<Compiler>(CompilerPossiblyRelativePathComparer.Instance);
             solutionCompilerInstances = new HashSet<CompilerInstance>();
             solutionIncludeDirectories = new Dictionary<String, IncludeDirectory>();
             selfGuid = AllocateGuid();
-
-            this.BaseDir = config.BaseDir;
-            this.overrideDefines = config.OverrideDefines;
         }
 
         public static Guid AllocateGuid() {
@@ -88,8 +77,8 @@ namespace VcxProjLib {
                 includeDirPair.Value.Rebase(before, after);
             }
 
-            if (BaseDir != null) {
-                BaseDir.Rebase(before, after);
+            if (this.config.BaseDir != null) {
+                this.config.BaseDir.Rebase(before, after);
             }
         }
 
@@ -169,7 +158,7 @@ namespace VcxProjLib {
 
                 // put global override defines silently
                 // TODO: write them to solution-wide props
-                foreach (Define define in overrideDefines) {
+                foreach (Define define in config.OverrideDefines) {
                     pf.UnsetCppDefine(define.Name);
                     pf.SetCppDefine(define.ToString());
                 }
@@ -178,7 +167,7 @@ namespace VcxProjLib {
                 //pf.DumpData();
                 Int64 projectHash = pf.HashProjectID();
                 if (!projects.ContainsKey(projectHash)) {
-                    projects.Add(projectHash, new Project(AllocateGuid(), compilerInstance, pf.IncludeDirectories, pf.SetOfDefines, pf.ForceIncludes));
+                    projects.Add(projectHash, new Project(AllocateGuid(), projectHash, this, compilerInstance, pf.IncludeDirectories, pf.SetOfDefines, pf.ForceIncludes));
                 }
 
                 // add file to project
@@ -223,6 +212,17 @@ namespace VcxProjLib {
             foreach (Compiler compiler in solutionCompilers) {
                 foreach (CompilerInstance compilerInstance in compiler.Instances) {
                     compilerInstance.ExtractAdditionalInfo(remote);
+                }
+            }
+        }
+
+        public void FilterOutEntries() {
+            foreach (Compiler compiler in solutionCompilers) {
+                RelativeCrosspath compilerFilename = RelativeCrosspath.FromString(compiler.ExePath.LastEntry);
+                if (config.ExcludeCompilers.Contains(compiler.ExePath) || config.ExcludeCompilers.Contains(compilerFilename)) {
+                    // Remove projects
+                    compiler.Skip = true;
+                    Logger.WriteLine(LogLevel.Debug, $"Skipping compiler {compiler}, all inherent instances and projects");
                 }
             }
         }

@@ -42,7 +42,7 @@ namespace CrosspathUnitTests {
             Assert.AreEqual(@"/", cpath.ToAbsolutizedString());
         }
 
-        // I don't this this test is significant.
+        // I don't think this test is significant.
         /*
         [TestMethod]
         public void WindowsMinifiedRootDrive() {
@@ -84,7 +84,7 @@ namespace CrosspathUnitTests {
             Assert.AreEqual(@"/local/store/qemu", ((AbsoluteCrosspath) cpath).ToString());
             // DONE: substitute (rebase) absolute paths
             Assert.AreEqual(@"D:\Projects\local\store\qemu"
-                  , ((AbsoluteCrosspath) cpath).Rebase(AbsoluteCrosspath.FromString("/")
+              , ((AbsoluteCrosspath) cpath).Rebase(AbsoluteCrosspath.FromString("/")
                   , AbsoluteCrosspath.FromString(@"D:\Projects")).ToString());
         }
 
@@ -147,6 +147,20 @@ namespace CrosspathUnitTests {
             hs.Add(Crosspath.FromString("/usr/share/vcxprojwriter"));
             hs.Add(Crosspath.FromString("/usr/share/vcxprojwriter"));
             Assert.AreEqual(1, hs.Count);
+        }
+
+        [TestMethod]
+        public void HashDiversedEquality() {
+            HashSet<Crosspath> hs = new HashSet<Crosspath> {
+                Crosspath.FromString("/tmp/VCXProjWriter")
+              , AbsoluteCrosspath.FromString("/tmp/VCXProjWriter1")
+              , RelativeCrosspath.FromString("tmp/VCXProjWriter")
+            };
+            RelativeCrosspath relativeCrosspath = RelativeCrosspath.FromString("VCXProjWriter");
+            relativeCrosspath.SetWorkingDirectory(AbsoluteCrosspath.FromString("/tmp"));
+            Boolean has_added = hs.Add(relativeCrosspath);
+            Assert.AreEqual(false, has_added);
+            Assert.AreEqual(3, hs.Count);
         }
 
         [TestMethod]
@@ -229,7 +243,6 @@ namespace CrosspathUnitTests {
                 Assert.Fail("should fail");
             }
             catch (CrosspathLibException) {
-
             }
         }
 

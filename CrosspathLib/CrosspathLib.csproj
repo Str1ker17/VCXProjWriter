@@ -46,6 +46,7 @@
     <Compile Include="AbsoluteCrosspath.cs" />
     <Compile Include="Crosspath.cs" />
     <Compile Include="misc\CrosspathLibException.cs" />
+    <Compile Include="misc\LinkedListEquality.cs" />
     <Compile Include="misc\PolymorphismException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RelativeCrosspath.cs" />

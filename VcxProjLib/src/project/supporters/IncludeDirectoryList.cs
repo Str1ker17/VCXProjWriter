@@ -75,7 +75,8 @@ namespace VcxProjLib {
                         }
 
                         Debug.Assert(enumeratorThis.Current != null, "enumeratorThis.Current != null");
-                        if (!ReferenceEquals(enumeratorThis.Current, enumeratorOther.Current)) {
+                        //if (!ReferenceEquals(enumeratorThis.Current, enumeratorOther.Current)) {
+                        if (!enumeratorThis.Current.Equals(enumeratorOther.Current)) {
                             return false;
                         }
                     }

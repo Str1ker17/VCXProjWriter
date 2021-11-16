@@ -33,8 +33,8 @@ namespace VcxProjLib {
             ForceIncludes = new HashSet<AbsoluteCrosspath>();
             FilePath = filePath;
             OwnerSolution = sln;
-            if (sln.BaseDir != null) {
-                ProjectFolder = RelativeCrosspath.CreateRelativePath(filePath, sln.BaseDir, true).ToContainingDirectory() as RelativeCrosspath;
+            if (sln.config.BaseDir != null) {
+                ProjectFolder = RelativeCrosspath.CreateRelativePath(filePath, sln.config.BaseDir, true).ToContainingDirectory() as RelativeCrosspath;
             }
         }
 
@@ -93,7 +93,8 @@ namespace VcxProjLib {
         public Int64 HashProjectID() {
             Int64 hashIn = String.Empty.GetHashCode();
             foreach (IncludeDirectory inc in IncludeDirectories) {
-                hashIn += inc.GetHashCode();
+                // Crosspath.GetHashCode() is too weak now. Do it ourselves.
+                hashIn += inc.ToString().GetHashCode();
             }
 
             hashIn += CompilerOfFile.GetHashCode();
@@ -103,7 +104,7 @@ namespace VcxProjLib {
             }
 
             foreach (AbsoluteCrosspath forceInclude in ForceIncludes) {
-                hashIn += ((Int64)forceInclude.GetHashCode()) << 21;
+                hashIn += ((Int64)forceInclude.ToString().GetHashCode()) << 21;
             }
 
             return hashIn;

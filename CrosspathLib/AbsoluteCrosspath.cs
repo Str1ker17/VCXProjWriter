@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CrosspathLib {
@@ -182,6 +183,22 @@ namespace CrosspathLib {
 
         public RelativeCrosspath Relativized(AbsoluteCrosspath workingDir, Boolean dontGoOut = false) {
             return RelativeCrosspath.CreateRelativePath(this, workingDir, dontGoOut);
+        }
+
+        public override int GetHashCode() {
+            return base.GetHashCode();
+        }
+
+        public override Boolean Equals(Object obj) {
+            if (obj is RelativeCrosspath relativeCrosspath) {
+                return relativeCrosspath.EqualsToAbsolute(this);
+            }
+
+            if (obj is AbsoluteCrosspath absoluteCrosspath) {
+                return this.ToString() == absoluteCrosspath.ToString();
+            }
+
+            return false;
         }
     }
 }
