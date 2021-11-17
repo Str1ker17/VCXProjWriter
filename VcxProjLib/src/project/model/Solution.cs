@@ -299,6 +299,9 @@ namespace VcxProjLib {
                 sw.WriteLine("VisualStudioVersion = 16.0.31613.86");
                 sw.WriteLine("MinimumVisualStudioVersion = 10.0.40219.1");
                 foreach (Project project in projects.Values) {
+                    if (project.Skip || project.CompilerInstance.BaseCompiler.Skip) {
+                        continue;
+                    }
                     // this magic GUID is "Windows (Visual C++)" project type
                     sw.WriteLine($"Project(\"{{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}}\") = \"{project.Name}\", \"{project.Filename}\", \"{{{project.Guid.ToString().ToUpper()}}}\"");
                     sw.WriteLine("EndProject");
@@ -322,6 +325,9 @@ namespace VcxProjLib {
                 sw.WriteLine("GlobalSection(ProjectConfigurationPlatforms) = postSolution");
                 String[] cfgStages = { "ActiveCfg", "Build.0", "Deploy.0" };
                 foreach (Project project in projects.Values) {
+                    if (project.Skip || project.CompilerInstance.BaseCompiler.Skip) {
+                        continue;
+                    }
                     foreach (String cfg in SolutionStructure.SolutionConfigurations) {
                         foreach (String cfgStage in cfgStages) {
                             sw.WriteLine($"\t\t{{{project.Guid.ToString().ToUpper()}}}.{cfg}|{SolutionStructure.SolutionPlatformName}.{cfgStage} = {cfg}|{project.CompilerInstance.VSPlatform}");
