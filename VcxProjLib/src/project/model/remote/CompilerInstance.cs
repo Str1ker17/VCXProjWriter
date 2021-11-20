@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -49,6 +50,26 @@ namespace VcxProjLib {
                    this.identityOptions.SetEquals(((CompilerInstance)obj).identityOptions);
         }
 
+        [Pure]
+        protected Boolean HasGCCProbablyNoOption(String arg) {
+            if (arg.StartsWith("no-")) {
+                arg = arg.Substring(3);
+            }
+
+            if (
+                arg.StartsWith("stack-protector") // __SSP__
+             || arg.StartsWith("unsigned-char") // __CHAR_UNSIGNED__
+             || arg.StartsWith("sanitize=") // __SANITIZE_ADDRESS__
+             || arg.StartsWith("fast-math")
+             || arg.StartsWith("pic", StringComparison.OrdinalIgnoreCase) // __pic__, __PIC__
+             || arg.StartsWith("pie", StringComparison.OrdinalIgnoreCase) // __pie__, __PIE__
+            ) {
+                return true;
+            }
+
+            return false;
+        }
+
         public CompilerInstance(Compiler baseCompiler, List<String> args) {
             this.BaseCompiler = baseCompiler;
             identityOptions = new HashSet<String>();
@@ -60,11 +81,8 @@ namespace VcxProjLib {
                 // Machine-dependent options can change defines and include dirs
                 // See also: https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
                 if (arg.StartsWith("-m", StringComparison.Ordinal)
-                 || arg.StartsWith("-fstack-protector", StringComparison.Ordinal) // __SSP__
                  || arg.StartsWith("-O", StringComparison.Ordinal) // __OPTIMIZE__
-                 || arg.StartsWith("-funsigned-char", StringComparison.Ordinal) // __CHAR_UNSIGNED__
-                 || arg.StartsWith("-fsanitize=", StringComparison.Ordinal) // __SANITIZE_ADDRESS__
-                 || arg.StartsWith("-ffast-math", StringComparison.Ordinal)
+                 || (arg.StartsWith("-f") && HasGCCProbablyNoOption(arg.Substring(2)))
                 ) {
                     identityOptions.Add(arg);
                 }
