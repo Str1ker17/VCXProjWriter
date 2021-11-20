@@ -28,6 +28,7 @@
 #define __extension__
 #define __attribute__(...)
 #define __attribute(...)
+#define __label__ int
 
 #define asm __asm__
 #define __asm __asm__
@@ -88,6 +89,7 @@
 #define __builtin_memset(dst, val, size)
 
 #define __builtin_parity(value) 0
+#define __builtin_prefetch(addr, ...)
 
 #define __sync_fetch_and_or(ptr, mask) (*(ptr))
 #define __sync_val_compare_and_swap(val, old, new) (*(val))

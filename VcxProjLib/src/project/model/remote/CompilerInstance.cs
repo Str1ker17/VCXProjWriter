@@ -119,7 +119,7 @@ namespace VcxProjLib {
                 throw new ApplicationException("could not create temporary file");
             }
 
-            if (remote.Execute($"{BaseCompiler.ExePath} {this} -E -dM - < {remoteTempFile} | sort", out String defines) != RemoteHost.Success) {
+            if (remote.Execute($"{BaseCompiler.ExePath} {this} -E -dM {remoteTempFile} | sort", out String defines) != RemoteHost.Success) {
                 throw new ApplicationException("could not extract defines from compiler");
             }
 

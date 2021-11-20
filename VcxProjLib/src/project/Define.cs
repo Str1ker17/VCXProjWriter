@@ -26,7 +26,7 @@ namespace VcxProjLib {
             }
             else {
                 // unquotize value if required
-                Value = parts[1].Trim('"');
+                Value = parts[1];
             }
         }
 
