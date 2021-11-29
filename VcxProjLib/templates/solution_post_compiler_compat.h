@@ -26,8 +26,8 @@
 #define restrict
 
 #define __extension__
-#define __attribute__(...)
-#define __attribute(...)
+//#define __attribute__(...)
+//#define __attribute(...)
 #define __label__ int
 
 #define asm __asm__

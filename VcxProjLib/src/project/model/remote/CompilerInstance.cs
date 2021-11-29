@@ -63,6 +63,7 @@ namespace VcxProjLib {
              || arg.StartsWith("fast-math")
              || arg.StartsWith("pic", StringComparison.OrdinalIgnoreCase) // __pic__, __PIC__
              || arg.StartsWith("pie", StringComparison.OrdinalIgnoreCase) // __pie__, __PIE__
+             || arg.StartsWith("cf-protection")
             ) {
                 return true;
             }

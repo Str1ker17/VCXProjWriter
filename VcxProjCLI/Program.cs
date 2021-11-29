@@ -193,9 +193,15 @@ namespace VcxProjCLI {
                 if (config.Remote != null) {
                     sln.DownloadCompilerIncludeDirectoriesFromRemote(config.Remote, config.Outdir);
                     foreach (IncludeDirectory includeDirectory in remoteNotRebased) {
+                        Crosspath outdir = Crosspath.FromString(config.Outdir);
+                        if (outdir is RelativeCrosspath relativeCrosspath) {
+                            outdir = relativeCrosspath.Absolutized(AbsoluteCrosspath.GetCurrentDirectory());
+                        }
+
                         includeDirectory.RebaseToLocal(config.Remote
-                              , AbsoluteCrosspath.GetCurrentDirectory().Append(RelativeCrosspath.FromString(config.Outdir))
-                                                                       .Append(RelativeCrosspath.FromString(String.Format(SolutionStructure.RemoteIncludePath, config.Remote.Host))));
+                          , ((AbsoluteCrosspath) outdir).Append(
+                                RelativeCrosspath.FromString(String.Format(SolutionStructure.RemoteIncludePath
+                                  , config.Remote.Host))));
                     }
                 }
 
