@@ -167,7 +167,7 @@ namespace VcxProjLib {
                 //pf.DumpData();
                 Int64 projectHash = pf.HashProjectID();
                 if (!projects.ContainsKey(projectHash)) {
-                    projects.Add(projectHash, new Project(AllocateGuid(), projectHash, this, compilerInstance, pf.IncludeDirectories, pf.SetOfDefines, pf.ForceIncludes));
+                    projects.Add(projectHash, new Project(AllocateGuid(), projectHash, this, compilerInstance));
                 }
 
                 // add file to project

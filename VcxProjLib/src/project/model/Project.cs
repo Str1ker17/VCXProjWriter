@@ -36,25 +36,6 @@ namespace VcxProjLib {
         public CompilerInstance CompilerInstance { get; }
 
         /// <summary>
-        /// Not only extra include directories, but system too.
-        /// PRESERVE ORDER
-        /// </summary>
-        public IncludeDirectoryList IncludeDirectories { get; }
-
-        /// <summary>
-        /// The project in VS shares a common set of preprocessor macros.
-        /// Does not require to preserve order since we are processing command-line defines ourselves,
-        /// producing out only a 'clean' set of defines with their final values.
-        /// </summary>
-        public HashSet<Define> Defines { get; }
-
-        /// <summary>
-        /// The build system can enforce inclusion by the '-include' param
-        /// and this is a precise code analyze dependency and a distinguisher factor too.
-        /// </summary>
-        public HashSet<AbsoluteCrosspath> ForcedIncludes { get; }
-
-        /// <summary>
         /// Project is a set of source files.
         /// Does not require to preserve order.
         /// </summary>
@@ -62,18 +43,13 @@ namespace VcxProjLib {
 
         public HashSet<String> ProjectFilters { get; }
 
-        public Project(Guid guid, Int64 projectHash, Solution ownerSolution, CompilerInstance compilerInstance, IncludeDirectoryList includeDirectories
-                     , HashSet<Define> defines, HashSet<AbsoluteCrosspath> forcedIncludes) {
+        public Project(Guid guid, Int64 projectHash, Solution ownerSolution, CompilerInstance compilerInstance) {
             ProjectSerial = nextProjectId++;
             Guid = guid;
             ProjectHash = projectHash;
             OwnerSolution = ownerSolution;
             Name = $"Project_{ProjectSerial:D4}";
             CompilerInstance = compilerInstance;
-            // copy references
-            IncludeDirectories = includeDirectories;
-            Defines = defines;
-            ForcedIncludes = forcedIncludes;
             // initialize an empty set
             ProjectFiles = new HashSet<ProjectFile>();
             ProjectFilters = new HashSet<String>();
@@ -113,25 +89,6 @@ namespace VcxProjLib {
             // TODO: allow relax if some defines are absent in one of sets
             if (!CompilerPossiblyRelativePathComparer.Instance.Equals(CompilerInstance.BaseCompiler,
                     pf.CompilerOfFile.BaseCompiler)) {
-                return false;
-            }
-
-            if (OwnerSolution.config.RelaxIncludeDirsOrder) {
-                if (!IncludeDirectories.ListIdenticalRelaxOrder(pf.IncludeDirectories)) {
-                    return false;
-                }
-            }
-            else {
-                if (!IncludeDirectories.ListIdentical(pf.IncludeDirectories)) {
-                    return false;
-                }
-            }
-
-            if (!Defines.SetEquals(pf.SetOfDefines)) {
-                return false;
-            }
-
-            if (!ForcedIncludes.SetEquals(pf.ForceIncludes)) {
                 return false;
             }
 
@@ -183,44 +140,12 @@ namespace VcxProjLib {
             projectPropertyGroupGlobals.AppendChild(projectGuid);
             projectNode.AppendChild(projectPropertyGroupGlobals);
 
-            // IDU settings
             XmlElement projectPropertyGroupIDU = doc.CreateElement("PropertyGroup");
-
-            XmlElement projectIncludePaths = doc.CreateElement("NMakeIncludeSearchPath");
-            // DONE?: intermix project include directories with compiler include directories
-            // in the project file
-            foreach (IncludeDirectory includePath in IncludeDirectories) {
-                // append -idirafter to the very end, below compiler dirs
-                if (includePath.Type == IncludeDirectoryType.DirAfter) {
-                    continue;
-                }
-                projectIncludePaths.InnerText += includePath.GetLocalProjectPath(solutionDir) + ";";
-            }
-            projectIncludePaths.InnerText += "$(NMakeIncludeSearchPath)";
-            foreach (IncludeDirectory includePath in IncludeDirectories) {
-                // append -idirafter to the very end, below compiler dirs
-                if (includePath.Type == IncludeDirectoryType.DirAfter) {
-                    projectIncludePaths.InnerText += ";" + includePath.GetLocalProjectPath(solutionDir);
-                }
-            }
-            projectPropertyGroupIDU.AppendChild(projectIncludePaths);
-
             // maybe someday this will be helpful, but now it can be inherited from Solution.props
             XmlElement projectForcedIncludes = doc.CreateElement("NMakeForcedIncludes");
             // TODO: add compiler compat header to forced includes
             projectForcedIncludes.InnerText = $@"$(ProjectDir)\{compatLocal};$(SolutionPreCompilerCompat);$(CompilerCompat);$(SolutionPostCompilerCompat);$(ProjectDir)\{compatLocalPost}";
-            foreach (AbsoluteCrosspath projectForcedInclude in ForcedIncludes) {
-                projectForcedIncludes.InnerText += $";{projectForcedInclude}";
-            }
             projectPropertyGroupIDU.AppendChild(projectForcedIncludes);
-
-            XmlElement projectDefines = doc.CreateElement("NMakePreprocessorDefinitions");
-            foreach (Define define in Defines) {
-                projectDefines.InnerText += define + ";";
-            }
-            projectDefines.InnerText += "$(NMakePreprocessorDefinitions)";
-            projectPropertyGroupIDU.AppendChild(projectDefines);
-
             projectNode.AppendChild(projectPropertyGroupIDU);
 
             // source file list
@@ -231,6 +156,43 @@ namespace VcxProjLib {
                 // TODO: we need to access path before rebase occured...
                 XmlElement projectFileXmlElement = doc.CreateElement("ClCompile");
                 projectFileXmlElement.SetAttribute("Include", projectFile.FilePath.ToString());
+
+                // IDU settings
+
+                XmlElement pfIncludePaths = doc.CreateElement("AdditionalIncludeDirectories");
+                // DONE?: intermix project include directories with compiler include directories
+                // in the project file
+                foreach (IncludeDirectory includePath in projectFile.IncludeDirectories) {
+                    // append -idirafter to the very end, below compiler dirs
+                    if (includePath.Type == IncludeDirectoryType.DirAfter) {
+                        continue;
+                    }
+                    pfIncludePaths.InnerText += includePath.GetLocalProjectPath(solutionDir) + ";";
+                }
+                pfIncludePaths.InnerText += "%(AdditionalIncludeDirectories)";
+                foreach (IncludeDirectory includePath in projectFile.IncludeDirectories) {
+                    // append -idirafter to the very end, below compiler dirs
+                    if (includePath.Type == IncludeDirectoryType.DirAfter) {
+                        pfIncludePaths.InnerText += ";" + includePath.GetLocalProjectPath(solutionDir);
+                    }
+                }
+                projectFileXmlElement.AppendChild(pfIncludePaths);
+
+                // maybe someday this will be helpful, but now it can be inherited from Solution.props
+                XmlElement pfForcedIncludes = doc.CreateElement("ForcedIncludeFiles");
+                foreach (AbsoluteCrosspath projectForcedInclude in projectFile.ForceIncludes) {
+                    pfForcedIncludes.InnerText += $"{projectForcedInclude};";
+                }
+                pfForcedIncludes.InnerText += $"%(ForcedIncludeFiles)";
+                projectFileXmlElement.AppendChild(pfForcedIncludes);
+
+                XmlElement pfDefines = doc.CreateElement("PreprocessorDefinitions");
+                foreach (Define define in projectFile.Defines.Values) {
+                    pfDefines.InnerText += define + ";";
+                }
+                pfDefines.InnerText += "$(PreprocessorDefinitions)";
+                projectFileXmlElement.AppendChild(pfDefines);
+
                 projectItemGroupCompiles.AppendChild(projectFileXmlElement);
             }
 

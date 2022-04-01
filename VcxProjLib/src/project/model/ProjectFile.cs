@@ -92,21 +92,7 @@ namespace VcxProjLib {
         /// <returns></returns>
         public Int64 HashProjectID() {
             Int64 hashIn = String.Empty.GetHashCode();
-            foreach (IncludeDirectory inc in IncludeDirectories) {
-                // Crosspath.GetHashCode() is too weak now. Do it ourselves.
-                hashIn += inc.ToString().GetHashCode();
-            }
-
             hashIn += CompilerOfFile.GetHashCode();
-
-            foreach (Define def in Defines.Values) {
-                hashIn += ((Int64)(def.Name.GetHashCode() + def.Value.GetHashCode())) << 32;
-            }
-
-            foreach (AbsoluteCrosspath forceInclude in ForceIncludes) {
-                hashIn += ((Int64)forceInclude.ToString().GetHashCode()) << 21;
-            }
-
             return hashIn;
         }
 

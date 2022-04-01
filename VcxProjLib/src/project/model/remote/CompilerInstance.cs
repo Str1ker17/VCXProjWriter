@@ -40,7 +40,21 @@ namespace VcxProjLib {
         }
 
         public override Int32 GetHashCode() {
-            return BaseCompiler.ShortName.GetHashCode();
+            Int32 hashIn = BaseCompiler.ShortName.GetHashCode();
+            foreach (String option in identityOptions) {
+                hashIn += option.GetHashCode();
+            }
+
+            if (HaveAdditionalInfo) {
+                foreach (IncludeDirectory includeDirectory in IncludeDirectories) {
+                    hashIn += includeDirectory.GetHashCode();
+                }
+                foreach (Define define in Defines) {
+                    hashIn += define.ToString().GetHashCode();
+                }
+            }
+
+            return hashIn;
         }
 
         public override Boolean Equals(Object obj) {
