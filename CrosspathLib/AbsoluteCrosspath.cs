@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CrosspathLib {
-    public class AbsoluteCrosspath : Crosspath {
+    public class AbsoluteCrosspath : Crosspath, IEquatable<AbsoluteCrosspath> {
         protected internal static Crosspath CreateInstance() {
             return new AbsoluteCrosspath();
         }
@@ -195,10 +195,15 @@ namespace CrosspathLib {
             }
 
             if (obj is AbsoluteCrosspath absoluteCrosspath) {
-                return this.ToString() == absoluteCrosspath.ToString();
+                return this.Equals(absoluteCrosspath);
             }
 
             return false;
+        }
+
+        public bool Equals(AbsoluteCrosspath other) {
+            if (other == null) return false;
+            return this.ToString() == other.ToString();
         }
     }
 }

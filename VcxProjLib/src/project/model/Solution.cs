@@ -13,12 +13,12 @@ namespace VcxProjLib {
         /// <summary>
         /// The unique identifier of solution in terms of VS.
         /// </summary>
-        protected Guid selfGuid;
+        protected readonly Guid selfGuid;
 
         /// <summary>
         /// Solution is a set of projects.
         /// </summary>
-        protected Dictionary<Int64, Project> projects;
+        internal readonly Dictionary<Int64, Project> projects;
 
         // these containers have 2 targets:
         //   1. avoid duplicates;
@@ -104,6 +104,75 @@ namespace VcxProjLib {
             return includeDir;
         }
 
+        public Boolean AddSourceFile(Crosspath compilerPath, AbsoluteCrosspath xpath, AbsoluteCrosspath workingDir, List<String> arguments) {
+            // TODO: filter out entries by include and exclude lists
+            // TODO: filter out compilers by include and exclude lists
+
+            Compiler compiler = null;
+            foreach (Compiler solutionCompiler in solutionCompilers) {
+                if (solutionCompiler.ExePath.ToString().Equals(compilerPath.ToString())) {
+                    // already registered
+                    compiler = solutionCompiler;
+                    break;
+                }
+            }
+            if (compiler == null) {
+                compiler = new Compiler(compilerPath);
+                if (solutionCompilers.Add(compiler)) {
+                    Logger.WriteLine(LogLevel.Info, $"New compiler '{compiler.ExePath}'");
+                }
+            }
+
+            CompilerInstance compilerInstance = null;
+            CompilerInstance compilerInstanceTmp = new CompilerInstance(compiler, arguments);
+            foreach (CompilerInstance compilerInstanceInUse in compiler.Instances) {
+                if (compilerInstanceInUse.Equals(compilerInstanceTmp)) {
+                    compilerInstance = compilerInstanceInUse;
+                    break;
+                }
+            }
+
+            if (compilerInstance == null) {
+                compilerInstance = compilerInstanceTmp;
+                compiler.Instances.Add(compilerInstanceTmp);
+                Logger.WriteLine(LogLevel.Info, $"New compiler instance '{compilerInstanceTmp.BaseCompiler.ExePath} {compilerInstanceTmp}'");
+            }
+
+            ProjectFile pf = new ProjectFile(this, xpath, compilerInstance);
+            Logger.WriteLine(LogLevel.Trace, $"===== file {xpath} =====");
+
+            pf.AddInfoFromCommandLine(workingDir, arguments);
+
+            // put global override defines silently
+            // TODO: write them to solution-wide props
+            foreach (Define define in config.OverrideDefines) {
+                pf.UnsetCppDefine(define.Name);
+                pf.SetCppDefine(define.ToString());
+            }
+
+            // add to project files now?
+            //pf.DumpData();
+            Int64 projectHash = pf.HashProjectID();
+            if (!projects.ContainsKey(projectHash)) {
+                projects.Add(projectHash, new Project(AllocateGuid(), projectHash, this, compilerInstance));
+            }
+
+            // add file to project
+            if (!projects[projectHash].TestWhetherProjectFileBelongs(pf)) {
+                throw new ApplicationException(
+                        $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - hash function error");
+            }
+
+            if (!projects[projectHash].AddProjectFile(pf)) {
+                //throw new ApplicationException(
+                //        $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - already exists");
+                Logger.WriteLine(LogLevel.Error, $"[x] Could not add '{pf}' to project '{projectHash}' - already exists");
+            }
+
+            TrackFile(pf);
+            return true;
+        }
+
         public void ParseCompileDB(String filename) {
             // hope compiledb is not so large to eat all the memory
             String compiledbRaw = File.ReadAllText(filename);
@@ -113,76 +182,13 @@ namespace VcxProjLib {
                 AbsoluteCrosspath workingDir = AbsoluteCrosspath.FromString(entry.directory);
                 AbsoluteCrosspath xpath = AbsoluteCrosspath.FromString(entry.file, workingDir);
 
-                // TODO: filter out entries by include and exclude lists
-
                 // get compiler path
                 // it can be absolute or relative
                 Crosspath compilerPath = Crosspath.FromString(entry.arguments[0]);
 
-                // TODO: filter out compilers by include and exclude lists
-
-                Compiler compiler = null;
-                foreach (Compiler solutionCompiler in solutionCompilers) {
-                    if (solutionCompiler.ExePath.ToString().Equals(compilerPath.ToString())) {
-                        // already registered
-                        compiler = solutionCompiler;
-                        break;
-                    }
+                if (!AddSourceFile(compilerPath, xpath, workingDir, entry.arguments)) {
+                    throw new ApplicationException("Could not add source file");
                 }
-                if (compiler == null) {
-                    compiler = new Compiler(compilerPath);
-                    if (solutionCompilers.Add(compiler)) {
-                        Logger.WriteLine(LogLevel.Info, $"New compiler '{compiler.ExePath}'");
-                    }
-                }
-
-                CompilerInstance compilerInstance = null;
-                CompilerInstance compilerInstanceTmp = new CompilerInstance(compiler, entry.arguments);
-                foreach (CompilerInstance compilerInstanceInUse in compiler.Instances) {
-                    if (compilerInstanceInUse.Equals(compilerInstanceTmp)) {
-                        compilerInstance = compilerInstanceInUse;
-                        break;
-                    }
-                }
-
-                if (compilerInstance == null) {
-                    compilerInstance = compilerInstanceTmp;
-                    compiler.Instances.Add(compilerInstanceTmp);
-                    Logger.WriteLine(LogLevel.Info, $"New compiler instance '{compilerInstanceTmp.BaseCompiler.ExePath} {compilerInstanceTmp}'");
-                }
-
-                ProjectFile pf = new ProjectFile(this, xpath, compilerInstance);
-                Logger.WriteLine(LogLevel.Trace, $"===== file {xpath} =====");
-
-                pf.AddInfoFromCommandLine(workingDir, entry.arguments);
-
-                // put global override defines silently
-                // TODO: write them to solution-wide props
-                foreach (Define define in config.OverrideDefines) {
-                    pf.UnsetCppDefine(define.Name);
-                    pf.SetCppDefine(define.ToString());
-                }
-
-                // add to project files now?
-                //pf.DumpData();
-                Int64 projectHash = pf.HashProjectID();
-                if (!projects.ContainsKey(projectHash)) {
-                    projects.Add(projectHash, new Project(AllocateGuid(), projectHash, this, compilerInstance));
-                }
-
-                // add file to project
-                if (!projects[projectHash].TestWhetherProjectFileBelongs(pf)) {
-                    throw new ApplicationException(
-                            $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - hash function error");
-                }
-
-                if (!projects[projectHash].AddProjectFile(pf)) {
-                    //throw new ApplicationException(
-                    //        $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - already exists");
-                    Logger.WriteLine(LogLevel.Error, $"[x] Could not add '{pf}' to project '{projectHash}' - already exists");
-                }
-
-                TrackFile(pf);
             }
 
             Logger.WriteLine(LogLevel.Info, $"[i] Created a solution of {projects.Count} projects from {solutionFiles.Count} files");

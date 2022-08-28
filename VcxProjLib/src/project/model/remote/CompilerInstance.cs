@@ -59,6 +59,7 @@ namespace VcxProjLib {
 
         public override Boolean Equals(Object obj) {
             if (ReferenceEquals(this, obj)) return true;
+            if (obj == null) return false;
             if (this.GetType() != obj.GetType()) return false;
             return this.BaseCompiler.Equals(((CompilerInstance)obj).BaseCompiler) &&
                    this.identityOptions.SetEquals(((CompilerInstance)obj).identityOptions);
@@ -165,7 +166,7 @@ namespace VcxProjLib {
                         case "__mips__": VSPlatform = Platform.MIPS; break;
 
                         case "__WORDSIZE__": /* this seems to be standard */
-                        case "__INTPTR_WIDTH__": /* this not, but use as fallback */
+                        case "__INTPTR_WIDTH__": /* this does not, but use as fallback */
                             if (Int32.Parse(defArray[2]) == 32) {
                                 fallbackPlatform = Platform.x86;
                             }
@@ -227,12 +228,8 @@ End of search list.
                 }
 
                 if (cppLine.Length > 0 && cppLine[0] == ' ') {
-                    Crosspath xpath = Crosspath.FromString(cppLine.Substring(1));
-                    if (xpath is RelativeCrosspath relPath) {
-                        relPath.SetWorkingDirectory(xpwd);
-                        xpath = relPath.Absolutized();
-                    }
-                    IncludeDirectory incDir = new IncludeDirectory(xpath as AbsoluteCrosspath, incDirType);
+                    Crosspath xpath = AbsoluteCrosspath.FromString(cppLine.Substring(1), xpwd);
+                    IncludeDirectory incDir = new IncludeDirectory((AbsoluteCrosspath) xpath, incDirType);
                     IncludeDirectory incDirCached = BaseCompiler.TrackIncludeDir(incDir);
                     if (incDirCached != null) {
                         incDir = incDirCached;
@@ -263,7 +260,7 @@ End of search list.
             AbsoluteCrosspath xpath = solutionDir.Appended(RelativeCrosspath.FromString(CompilerInstanceCompatHeaderPath)).ToContainingDirectory();
             Directory.CreateDirectory(xpath.ToString());
             using (StreamWriter sw = new StreamWriter(CompilerInstanceCompatHeaderPath, false, Encoding.UTF8)) {
-                sw.WriteLine(@"#pragma once");
+                sw.WriteLine("#pragma once");
                 sw.WriteLine($"/* This is generated from compiler instance {BaseCompiler} {this} */");
                 foreach (Define compilerInternalDefine in Defines) {
                     sw.WriteLine($"#define {compilerInternalDefine.Name} {compilerInternalDefine.Value}");

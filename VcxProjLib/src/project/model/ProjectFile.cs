@@ -21,7 +21,6 @@ namespace VcxProjLib {
         public IncludeDirectoryList IncludeDirectories { get; }
         public Boolean DoNotUseStandardIncludeDirectories { get; }
         public Dictionary<String, Define> Defines { get; }
-        public HashSet<Define> SetOfDefines { get; }
         public HashSet<AbsoluteCrosspath> ForceIncludes { get; }
         
         public ProjectFile(Solution sln, AbsoluteCrosspath filePath, CompilerInstance compilerInstance) {
@@ -29,7 +28,6 @@ namespace VcxProjLib {
             IncludeDirectories = new IncludeDirectoryList();
             DoNotUseStandardIncludeDirectories = false;
             Defines = new Dictionary<String, Define>();
-            SetOfDefines = new HashSet<Define>(DefineExactComparer.Instance);
             ForceIncludes = new HashSet<AbsoluteCrosspath>();
             FilePath = filePath;
             OwnerSolution = sln;
@@ -55,11 +53,9 @@ namespace VcxProjLib {
                 if (oldDefine.Value != newDefine.Value) {
                     Logger.WriteLine(LogLevel.Warning, $"'{newDefine.Name}' redefined from '' to '{newDefine.Value}'");
                 }
-                SetOfDefines.Remove(oldDefine);
             }
 
             Defines[newDefine.Name] = newDefine;
-            SetOfDefines.Add(newDefine);
         }
 
         public void UnsetCppDefine(String undefineString) {
@@ -67,8 +63,6 @@ namespace VcxProjLib {
                 return;
             }
 
-            Define defineForRemoval = Defines[undefineString];
-            SetOfDefines.Remove(defineForRemoval);
             Defines.Remove(undefineString);
         }
 
@@ -104,7 +98,7 @@ namespace VcxProjLib {
             Int32 hiPart = (Int32)(bigHash >> 32);
             return loPart ^ hiPart;
         }
-
+#endif
         /// <summary>
         /// FIXME
         /// </summary>
@@ -115,7 +109,6 @@ namespace VcxProjLib {
             Boolean eq = ((ProjectFile) obj).HashProjectID() == this.HashProjectID();
             return eq;
         }
-#endif
 
         public override int GetHashCode() {
             return FilePath.GetHashCode();

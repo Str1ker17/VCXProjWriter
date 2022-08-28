@@ -24,6 +24,7 @@ namespace CrosspathLib {
             this.WorkingDirectory = source.WorkingDirectory;
         }
 
+        [Obsolete]
         public void SetWorkingDirectory(AbsoluteCrosspath workdir) {
             this.WorkingDirectory = workdir;
         }
@@ -117,8 +118,8 @@ namespace CrosspathLib {
             ret.WindowsRootDrive = xpath.WindowsRootDrive;
             ret.SetWorkingDirectory(workingDirectory);
 
-            using (var myIter = xpath.directories.GetEnumerator()) {
-                using (var theirsIter = workingDirectory.directories.GetEnumerator()) {
+            using (var myIter = xpath.GetEnumerator()) {
+                using (var theirsIter = workingDirectory.GetEnumerator()) {
                     Boolean myMoved;
                     Boolean theirsMoved;
 

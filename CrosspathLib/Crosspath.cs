@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CrosspathLib {
     public enum CrosspathOrigin {
@@ -13,24 +14,45 @@ namespace CrosspathLib {
       , Unix
     }
 
+    /// <summary>
+    /// We have to process all possible conditions:
+    /// - relative and absolute paths;
+    /// - Windows and Unix paths.
+    /// Also we need some flavor-agnostic internal format to store paths.
+    /// TODO: support also UNC paths, like \\192.168.0.1\share
+    /// 
+    /// The table of possible equality operations is below!
+    ///
+    ///             Crosspath | Absolute | Relative
+    /// Crosspath |      
+    /// Absolute  |                +
+    /// Relative  |
+    /// 
+    /// </summary>
     public abstract class Crosspath : IEnumerable<String> {
-        public String SourceString { get; private set; }
+
+        #region STATIC FIELDS
+
+        protected static int _serial_seq = 1;
+        protected static List<Crosspath> allObjects = new List<Crosspath>();
+        protected static HashSet<Crosspath> allObjectsSet = new HashSet<Crosspath>();
+
+        #endregion
+
+        #region FIELDS / PROPERTIES
+
         public CrosspathOrigin Origin { get; private set; }
         public CrosspathFlavor Flavor { get; protected set; }
         public Char WindowsRootDrive { get; protected set; }
         public String LastEntry { get { return directories.Last.Value; } }
 
-        internal LinkedList<String> directories;
-
-        // we have to process all possible conditions:
-        // relative and absolute paths;
-        // Windows and Unix paths.
-        // also we need some flavor-agnostic internal format to store paths
-
-        protected static int _serial_seq = 1;
-        protected static List<Crosspath> allObjects = new List<Crosspath>();
-        protected static HashSet<Crosspath> allObjectsSet = new HashSet<Crosspath>();
+        protected LinkedList<String> directories;
         protected int serial;
+
+        #endregion
+
+        #region CONSTRUCTORS
+
         /// <summary>
         /// This constructor is hidden from the outside of classes
         /// </summary>
@@ -38,6 +60,10 @@ namespace CrosspathLib {
             serial = _serial_seq;
             ++_serial_seq;
             allObjects.Add(this);
+
+            //if (!allObjectsSet.Add(this)) {
+            //    Debugger.Break();
+            //}
         }
 
         /// <summary>
@@ -45,13 +71,52 @@ namespace CrosspathLib {
         /// </summary>
         /// <param name="xpath">Source instance.</param>
         protected Crosspath(Crosspath xpath) : this() {
-            SourceString = xpath.SourceString;
             Origin = xpath.Origin;
             Flavor = xpath.Flavor;
             WindowsRootDrive = xpath.WindowsRootDrive;
 
             directories = new LinkedList<String>(xpath.directories);
         }
+
+        #endregion
+
+        #region HIERARCHY SUPPORT
+
+        /// <summary>
+        /// Removes last entry if exists and returns self.
+        /// This is useful to get containing directory.
+        /// </summary>
+        /// <returns>Modified self object</returns>
+        public virtual Crosspath ToContainingDirectory() {
+            if (directories.Count <= 0) {
+                throw new ArgumentException("can't go up");
+            }
+
+            directories.RemoveLast();
+            return this;
+        }
+
+        public IEnumerator<String> GetEnumerator() {
+            return directories.GetEnumerator();
+        }
+        
+        IEnumerator IEnumerable.GetEnumerator() {
+            return GetEnumerator();
+        }
+
+        /// <summary>
+        /// A generic API to get an absolute path of any Crosspath object.
+        /// </summary>
+        /// <returns>Absolute string; otherwise exception.</returns>
+        public abstract String ToAbsolutizedString();
+
+        public override String ToString() {
+            return $"(generic crosspath of {directories.Count} dirs)";
+        }
+
+        #endregion
+
+        #region FEATURES
 
         protected static void DetectParams(String path, out CrosspathOrigin origin, out CrosspathFlavor flavor, out Char rootDrive) {
             // Windows supports both / and \
@@ -69,8 +134,6 @@ namespace CrosspathLib {
                 rootDrive = path[0];
                 return;
             }
-
-            // TODO: support also UNC paths, like \\192.168.0.1\share
 
             origin = CrosspathOrigin.Relative;
 
@@ -111,7 +174,6 @@ namespace CrosspathLib {
             xpath.Origin = origin;
             xpath.Flavor = flavor;
             xpath.WindowsRootDrive = rootDrive;
-            xpath.SourceString = path;
             xpath.directories = new LinkedList<String>();
 
             // push directories
@@ -177,36 +239,9 @@ namespace CrosspathLib {
             return this;
         }
 
-        /// <summary>
-        /// Removes last entry if exists and returns self.
-        /// This is useful to get containing directory.
-        /// </summary>
-        /// <returns>Modified self object</returns>
-        public virtual Crosspath ToContainingDirectory() {
-            if (directories.Count > 0) {
-                directories.RemoveLast();
-            }
+        #endregion
 
-            return this;
-        }
-
-        public IEnumerator<String> GetEnumerator() {
-            return directories.GetEnumerator();
-        }
-        
-        IEnumerator IEnumerable.GetEnumerator() {
-            return GetEnumerator();
-        }
-
-        /// <summary>
-        /// A generic API to get an absolute path of any Crosspath object.
-        /// </summary>
-        /// <returns>Absolute string; otherwise exception.</returns>
-        public abstract String ToAbsolutizedString();
-
-        public override String ToString() {
-            return $"(generic crosspath of {directories.Count} dirs)";
-        }
+        #region COLLECTIONS SUPPORT
 
         /// <summary>
         /// This is tricky. Enabling AbsoluteCrosspath and RelativeCrosspath to be equal
@@ -236,5 +271,7 @@ namespace CrosspathLib {
                    this.WindowsRootDrive == crosspath.WindowsRootDrive &&
                    LinkedListEquality.Equals<String>(this.directories, crosspath.directories);
         }
+
+        #endregion
     }
 }

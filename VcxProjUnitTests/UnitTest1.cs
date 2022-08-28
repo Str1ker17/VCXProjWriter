@@ -138,5 +138,25 @@ namespace VcxProjUnitTests {
                 ++idx;
             }
         }
+
+        [TestMethod]
+        public void CreateSimpleSolution() {
+            Solution sln = new Solution(Configuration.Default());
+            AbsoluteCrosspath compilerPath = AbsoluteCrosspath.FromString("/usr/bin/gcc");
+            AbsoluteCrosspath dir = AbsoluteCrosspath.FromString("/projects/bin-src/make-dfsg-4.3/src");
+            sln.AddSourceFile(compilerPath, dir.Appended(RelativeCrosspath.FromString("main.c")), dir, new List<String>());
+            sln.AddSourceFile(compilerPath, dir.Appended(RelativeCrosspath.FromString("hash.c")), dir, new List<String>());
+            Assert.AreEqual(1, sln.projects.Count);
+        }
+        
+        [TestMethod]
+        public void CreateSolutionWithRecompiledFile() {
+            Solution sln = new Solution(Configuration.Default());
+            AbsoluteCrosspath compilerPath = AbsoluteCrosspath.FromString("/usr/bin/gcc");
+            AbsoluteCrosspath dir = AbsoluteCrosspath.FromString("/projects/bin-src/make-dfsg-4.3/src");
+            sln.AddSourceFile(compilerPath, dir.Appended(RelativeCrosspath.FromString("main.c")), dir, new List<String>());
+            sln.AddSourceFile(compilerPath, dir.Appended(RelativeCrosspath.FromString("main.c")), dir, new List<String>(new[]{"", "-D__KERNEL__"}));
+            Assert.AreEqual(1, sln.projects.Count);
+        }
     }
 }

@@ -110,15 +110,7 @@ namespace VcxProjLib {
         public override Boolean Equals(Object obj) {
             if (obj == null) return false;
             if (!(obj is Compiler compiler)) return false;
-            return ExePath == compiler.ExePath;
-        }
-
-        /// <summary>
-        /// Parse generic compiler argument, i.e. extract value of parameter.
-        /// </summary>
-        /// <returns></returns>
-        public static bool ParseCommandLineArgument() {
-            return false;
+            return ExePath.Equals(compiler.ExePath);
         }
     }
 }

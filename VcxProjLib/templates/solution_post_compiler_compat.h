@@ -26,9 +26,10 @@
 #define restrict
 
 #define __extension__
-//#define __attribute__(...)
-//#define __attribute(...)
+#define __attribute__(...)
+#define __attribute(...)
 #define __label__ int
+#define __inline
 
 #define asm __asm__
 #define __asm __asm__
@@ -102,3 +103,9 @@
 /*
  * User defined
  */
+
+#define STRIP_FBSDID
+
+// for ARM
+#define mb()
+#define dmb(sy)

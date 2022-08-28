@@ -32,7 +32,7 @@ namespace VcxProjCLI {
             Console.WriteLine( "-o, --output-dir DIR");
             Console.WriteLine($"        put solution to DIR directory. Default is '{config.Outdir}'.");
             Console.WriteLine( "-f, --file FILE");
-            Console.WriteLine($"        read compilation database from FILE.'");
+            Console.WriteLine( "        read compilation database from FILE.'");
             Console.WriteLine( "        The compilation database file should conform to compiledb \"arguments\" format.");
             Console.WriteLine( "        More about it: https://github.com/nickdiego/compiledb");
             Console.WriteLine( "-r, --remote");
@@ -81,7 +81,6 @@ namespace VcxProjCLI {
                         config.BaseDir = AbsoluteCrosspath.FromString(TakeArg(args, ref idx));
                         break;
 
-#if PATH_BASED_FILTERING
                     case "--include":
                         config.IncludeFilesFrom.Add(Crosspath.FromString(TakeArg(args, ref idx)));
                         break;
@@ -89,7 +88,6 @@ namespace VcxProjCLI {
                     case "--exclude":
                         config.ExcludeFilesFrom.Add(Crosspath.FromString(TakeArg(args, ref idx)));
                         break;
-#endif
 
                     case "-o":
                     case "--output-dir":
@@ -211,9 +209,9 @@ namespace VcxProjCLI {
                 sw.Stop();
                 Int64 write = sw.ElapsedMilliseconds;
 
-                Console.WriteLine();
-                Console.WriteLine($"Elapsed time: parseAndGroup = {parseAndGroup} ms, remoteInfo = {remoteInfo} ms" 
-                                + $", rebase = {rebase} ms, write = {write} ms.");
+                Logger.WriteLine(LogLevel.Info, "");
+                Logger.WriteLine(LogLevel.Info, $"Elapsed time: parseAndGroup = {parseAndGroup} ms, remoteInfo = {remoteInfo} ms" 
+                                              + $", rebase = {rebase} ms, write = {write} ms.");
 
                 if (config.OpenSolution) {
                     Process.Start(new ProcessStartInfo(Path.Combine(config.Outdir, SolutionStructure.SolutionFilename)) { UseShellExecute = true });

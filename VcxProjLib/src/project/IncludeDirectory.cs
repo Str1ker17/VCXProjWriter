@@ -19,12 +19,12 @@ namespace VcxProjLib {
 
         protected Boolean autoDownloaded = false;
 
-        protected static UInt32 serial = 1;
+        protected static UInt32 IDSerial = 1;
 
         public IncludeDirectory(AbsoluteCrosspath path, IncludeDirectoryType type) : base(path) {
             Type = type;
-            ShortName = $"{serial:D4}";
-            ++serial;
+            ShortName = $"{IDSerial:D4}";
+            ++IDSerial;
         }
 
         protected static Int32 ConvertTypeToInt(IncludeDirectoryType type) {
