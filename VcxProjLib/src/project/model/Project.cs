@@ -6,6 +6,20 @@ using CrosspathLib;
 
 namespace VcxProjLib {
     public class Project {
+
+        protected class ProjectFileComparer : IEqualityComparer<ProjectFile> {
+            public Boolean Equals(ProjectFile x, ProjectFile y) {
+                if (x == null || y == null) return false;
+                Boolean ret = x.FilePath.Equals(y.FilePath);
+                return ret;
+            }
+
+            public Int32 GetHashCode(ProjectFile obj) {
+                return 0;
+            }
+        }
+        protected static ProjectFileComparer pfComparer = new ProjectFileComparer();
+
         protected static int nextProjectId = 1;
 
         public int ProjectSerial { get; }
@@ -51,7 +65,7 @@ namespace VcxProjLib {
             Name = $"Project_{ProjectSerial:D4}";
             CompilerInstance = compilerInstance;
             // initialize an empty set
-            ProjectFiles = new HashSet<ProjectFile>();
+            ProjectFiles = new HashSet<ProjectFile>(pfComparer);
             ProjectFilters = new HashSet<String>();
         }
 

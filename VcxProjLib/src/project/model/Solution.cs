@@ -18,7 +18,7 @@ namespace VcxProjLib {
         /// <summary>
         /// Solution is a set of projects.
         /// </summary>
-        internal readonly Dictionary<Int64, Project> projects;
+        internal readonly Dictionary<Int64, LinkedList<Project>> projects;
 
         // these containers have 2 targets:
         //   1. avoid duplicates;
@@ -39,7 +39,7 @@ namespace VcxProjLib {
 
         public Solution(Configuration config) {
             this.config = config;
-            projects = new Dictionary<Int64, Project>();
+            projects = new Dictionary<Int64, LinkedList<Project>>();
             solutionFiles = new List<ProjectFile>();
             solutionCompilers = new HashSet<Compiler>(CompilerPossiblyRelativePathComparer.Instance);
             solutionCompilerInstances = new HashSet<CompilerInstance>();
@@ -72,6 +72,14 @@ namespace VcxProjLib {
                 projectFile.FilePath.Rebase(before, after);
             }
 
+            foreach (LinkedList<Project> chain in projects.Values) {
+                foreach (Project prj in chain) {
+                    foreach (ProjectFile projectFile in prj.ProjectFiles) {
+                        projectFile.FilePath.Rebase(before, after);
+                    }
+                }
+            }
+
             // move include directories to another location
             foreach (KeyValuePair<String, IncludeDirectory> includeDirPair in solutionIncludeDirectories) {
                 includeDirPair.Value.Rebase(before, after);
@@ -83,6 +91,13 @@ namespace VcxProjLib {
         }
 
         internal ProjectFile TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
+            if (!allowDuplicate) {
+                foreach (ProjectFile pf1 in solutionFiles) {
+                    if (pf1.Equals(pf)) {
+                        return null;
+                    }
+                }
+            }
             solutionFiles.Add(pf);
             return pf;
         }
@@ -131,7 +146,6 @@ namespace VcxProjLib {
                     break;
                 }
             }
-
             if (compilerInstance == null) {
                 compilerInstance = compilerInstanceTmp;
                 compiler.Instances.Add(compilerInstanceTmp);
@@ -154,19 +168,35 @@ namespace VcxProjLib {
             //pf.DumpData();
             Int64 projectHash = pf.HashProjectID();
             if (!projects.ContainsKey(projectHash)) {
-                projects.Add(projectHash, new Project(AllocateGuid(), projectHash, this, compilerInstance));
+                projects.Add(projectHash, new LinkedList<Project>());
             }
 
             // add file to project
-            if (!projects[projectHash].TestWhetherProjectFileBelongs(pf)) {
-                throw new ApplicationException(
-                        $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - hash function error");
+            Boolean TryAddToChain(Project _prj) {
+                if (!_prj.TestWhetherProjectFileBelongs(pf)) {
+                    throw new ApplicationException(
+                        $"[x] Could not add '{pf.FilePath}' to project chain '{projectHash}' - hash function error");
+                }
+
+                return _prj.AddProjectFile(pf);
             }
 
-            if (!projects[projectHash].AddProjectFile(pf)) {
-                //throw new ApplicationException(
-                //        $"[x] Could not add '{pf.FilePath}' to project '{projectHash}' - already exists");
-                Logger.WriteLine(LogLevel.Error, $"[x] Could not add '{pf}' to project '{projectHash}' - already exists");
+            Boolean added = false;
+            foreach (Project prj in projects[projectHash]) {
+                if (TryAddToChain(prj)) {
+                    added = true;
+                    break;
+                }
+            }
+
+            if (!added) {
+                // create a new project in chain for this file
+                Project newProject = new Project(AllocateGuid(), projectHash, this, compilerInstance);
+                projects[projectHash].AddLast(newProject);
+                if (!TryAddToChain(newProject)) {
+                    throw new ApplicationException(
+                        $"[x] Could not add '{pf.FilePath}' to project chain '{projectHash}' - internal error");
+                }
             }
 
             TrackFile(pf);
@@ -196,16 +226,17 @@ namespace VcxProjLib {
             if (Logger.Level == LogLevel.Trace) {
                 foreach (var projectKvp in projects) {
                     Logger.WriteLine(LogLevel.Trace, $"# Project ID {projectKvp.Key}");
-                    foreach (var file in projectKvp.Value.ProjectFiles) {
-                        Logger.WriteLine(LogLevel.Trace, $"# > {file.FilePath}");
-                    }
-
-                    using (var enumerator = projectKvp.Value.ProjectFiles.GetEnumerator()) {
-                        if (!enumerator.MoveNext()) {
-                            break;
+                    foreach (var project in projectKvp.Value) {
+                        foreach (var file in project.ProjectFiles) {
+                            Logger.WriteLine(LogLevel.Trace, $"# > {file.FilePath}");
                         }
-                        if (enumerator.Current != null) {
-                            enumerator.Current.DumpData();
+                        using (var enumerator = project.ProjectFiles.GetEnumerator()) {
+                            if (!enumerator.MoveNext()) {
+                                break;
+                            }
+                            if (enumerator.Current != null) {
+                                enumerator.Current.DumpData();
+                            }
                         }
                     }
 
@@ -281,9 +312,11 @@ namespace VcxProjLib {
                 compiler.WriteToFile(solutionDir);
             }
 
-            foreach (Project projectKvp in projects.Values) {
-                // remember there will also be .vcxproj.filters
-                projectKvp.WriteToFile(solutionDir);
+            foreach (LinkedList<Project> projectChain in projects.Values) {
+                foreach (Project projectKvp in projectChain) {
+                    // remember there will also be .vcxproj.filters
+                    projectKvp.WriteToFile(solutionDir);
+                }
             }
 
             // TODO: add them as "Solution Items"
@@ -304,13 +337,17 @@ namespace VcxProjLib {
                 sw.WriteLine("# Visual Studio Version 16");
                 sw.WriteLine("VisualStudioVersion = 16.0.31613.86");
                 sw.WriteLine("MinimumVisualStudioVersion = 10.0.40219.1");
-                foreach (Project project in projects.Values) {
-                    if (project.Skip || project.CompilerInstance.BaseCompiler.Skip) {
-                        continue;
+                foreach (LinkedList<Project> projectChain in projects.Values) {
+                    foreach (Project project in projectChain) {
+                        if (project.Skip || project.CompilerInstance.BaseCompiler.Skip) {
+                            continue;
+                        }
+
+                        // this magic GUID is "Windows (Visual C++)" project type
+                        sw.WriteLine(
+                            $"Project(\"{{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}}\") = \"{project.Name}\", \"{project.Filename}\", \"{{{project.Guid.ToString().ToUpper()}}}\"");
+                        sw.WriteLine("EndProject");
                     }
-                    // this magic GUID is "Windows (Visual C++)" project type
-                    sw.WriteLine($"Project(\"{{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}}\") = \"{project.Name}\", \"{project.Filename}\", \"{{{project.Guid.ToString().ToUpper()}}}\"");
-                    sw.WriteLine("EndProject");
                 }
 
                 // this magic GUID is "Solution Folder"
@@ -330,13 +367,17 @@ namespace VcxProjLib {
                 sw.WriteLine("EndGlobalSection");
                 sw.WriteLine("GlobalSection(ProjectConfigurationPlatforms) = postSolution");
                 String[] cfgStages = { "ActiveCfg", "Build.0", "Deploy.0" };
-                foreach (Project project in projects.Values) {
-                    if (project.Skip || project.CompilerInstance.BaseCompiler.Skip) {
-                        continue;
-                    }
-                    foreach (String cfg in SolutionStructure.SolutionConfigurations) {
-                        foreach (String cfgStage in cfgStages) {
-                            sw.WriteLine($"\t\t{{{project.Guid.ToString().ToUpper()}}}.{cfg}|{SolutionStructure.SolutionPlatformName}.{cfgStage} = {cfg}|{project.CompilerInstance.VSPlatform}");
+                foreach (LinkedList<Project> projectChain in projects.Values) {
+                    foreach (Project project in projectChain) {
+                        if (project.Skip || project.CompilerInstance.BaseCompiler.Skip) {
+                            continue;
+                        }
+
+                        foreach (String cfg in SolutionStructure.SolutionConfigurations) {
+                            foreach (String cfgStage in cfgStages) {
+                                sw.WriteLine(
+                                    $"\t\t{{{project.Guid.ToString().ToUpper()}}}.{cfg}|{SolutionStructure.SolutionPlatformName}.{cfgStage} = {cfg}|{project.CompilerInstance.VSPlatform}");
+                            }
                         }
                     }
                 }

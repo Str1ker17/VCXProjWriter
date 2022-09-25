@@ -8,7 +8,7 @@ namespace CrosspathLib {
                 using (LinkedList<T>.Enumerator enumeratorB = b.GetEnumerator()) {
                     while (true) {
                         Boolean thisSuccess = enumeratorA.MoveNext();
-                        Boolean otherSuccess = enumeratorB.MoveNext();                        
+                        Boolean otherSuccess = enumeratorB.MoveNext();
                         
                         if (thisSuccess == false && otherSuccess == false) {
                             // Both reached the end

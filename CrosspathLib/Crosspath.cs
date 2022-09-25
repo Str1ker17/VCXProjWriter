@@ -34,8 +34,6 @@ namespace CrosspathLib {
         #region STATIC FIELDS
 
         protected static int _serial_seq = 1;
-        protected static List<Crosspath> allObjects = new List<Crosspath>();
-        protected static HashSet<Crosspath> allObjectsSet = new HashSet<Crosspath>();
 
         #endregion
 
@@ -59,11 +57,6 @@ namespace CrosspathLib {
         protected Crosspath() {
             serial = _serial_seq;
             ++_serial_seq;
-            allObjects.Add(this);
-
-            //if (!allObjectsSet.Add(this)) {
-            //    Debugger.Break();
-            //}
         }
 
         /// <summary>

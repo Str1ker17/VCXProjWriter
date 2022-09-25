@@ -21,14 +21,15 @@ namespace VcxProjLib {
         public IncludeDirectoryList IncludeDirectories { get; }
         public Boolean DoNotUseStandardIncludeDirectories { get; }
         public Dictionary<String, Define> Defines { get; }
-        public HashSet<AbsoluteCrosspath> ForceIncludes { get; }
-        
+        // we are able to pass "-include file.h -include file.h"
+        public List<AbsoluteCrosspath> ForceIncludes { get; }
+
         public ProjectFile(Solution sln, AbsoluteCrosspath filePath, CompilerInstance compilerInstance) {
             CompilerOfFile = compilerInstance;
             IncludeDirectories = new IncludeDirectoryList();
             DoNotUseStandardIncludeDirectories = false;
             Defines = new Dictionary<String, Define>();
-            ForceIncludes = new HashSet<AbsoluteCrosspath>();
+            ForceIncludes = new List<AbsoluteCrosspath>();
             FilePath = filePath;
             OwnerSolution = sln;
             if (sln.config.BaseDir != null) {
