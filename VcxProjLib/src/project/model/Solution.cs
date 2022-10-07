@@ -93,7 +93,7 @@ namespace VcxProjLib {
         internal ProjectFile TrackFile(ProjectFile pf, Boolean allowDuplicate = false) {
             if (!allowDuplicate) {
                 foreach (ProjectFile pf1 in solutionFiles) {
-                    if (pf1.Equals(pf)) {
+                    if (pf1.FilePath.Equals(pf.FilePath)) {
                         return null;
                     }
                 }

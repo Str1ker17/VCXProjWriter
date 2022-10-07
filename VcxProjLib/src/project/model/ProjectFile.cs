@@ -100,16 +100,21 @@ namespace VcxProjLib {
             return loPart ^ hiPart;
         }
 #endif
-        /// <summary>
-        /// FIXME
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
+
+#if FALSE
+/// <summary>
+/// FIXME
+/// </summary>
+/// <param name="obj"></param>
+/// <returns></returns>
         public override bool Equals(object obj) {
             if (obj == null) return false;
-            Boolean eq = ((ProjectFile) obj).HashProjectID() == this.HashProjectID();
+            /* FIXME: compare defines and inc dirs too! */
+            Boolean eq = ((ProjectFile) obj).CompilerOfFile.Equals(this.CompilerOfFile) 
+                         && ((ProjectFile)obj).FilePath.Equals(this.FilePath);
             return eq;
         }
+#endif
 
         public override int GetHashCode() {
             return FilePath.GetHashCode();
